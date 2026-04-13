@@ -73,6 +73,13 @@ export default async function BookingsPage() {
                         📍 {other.city}
                       </div>
                     )}
+                    {b.agreed_price && (
+                      <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-accent)', marginTop: 4 }}>
+                        Agreed price: ₦{Number(b.agreed_price).toLocaleString()}
+                        {b.payment_status === 'in_escrow' && <span style={{ marginLeft: 8, color: 'var(--color-success)', fontWeight: 400, fontSize: '0.8rem' }}>· In escrow</span>}
+                        {b.payment_status === 'released' && <span style={{ marginLeft: 8, color: 'var(--color-success)', fontWeight: 400, fontSize: '0.8rem' }}>· Released</span>}
+                      </div>
+                    )}
                   </div>
                   <Badge variant={statusVariant[b.status as BookingStatus]}>
                     {b.status}
@@ -94,6 +101,8 @@ export default async function BookingsPage() {
                     bookingId={b.id}
                     currentStatus={b.status}
                     isRepairer={isRepairer}
+                    agreedPrice={b.agreed_price}
+                    paymentStatus={b.payment_status}
                   />
                   <Link href={`/bookings/${b.id}`} className="btn btn--ghost btn--sm" style={{ marginLeft: 'auto' }}>
                     View Details →

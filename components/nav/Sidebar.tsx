@@ -18,6 +18,8 @@ import {
   Car,
   LogOut,
   CalendarCheck,
+  Wallet,
+  CreditCard,
 } from 'lucide-react'
 
 import type { UserRole } from '@/types'
@@ -42,6 +44,7 @@ const navByRole: Record<
     { href: '/orders', label: 'Service Requests', icon: Package },
     { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
+    { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/profile', label: 'Profile & Reviews', icon: Star },
   ],
   parts_seller: [
@@ -49,6 +52,7 @@ const navByRole: Record<
     { href: '/marketplace', label: 'My Listings', icon: ShoppingBag },
     { href: '/orders', label: 'Orders', icon: Package },
     { href: '/chat', label: 'Messages', icon: MessageSquare },
+    { href: '/wallet', label: 'Wallet', icon: Wallet },
     { href: '/profile', label: 'Profile', icon: User },
   ],
   admin: [
@@ -58,6 +62,8 @@ const navByRole: Record<
     { href: '/admin/orders', label: 'Orders', icon: Package },
     { href: '/admin/cars', label: 'Cars', icon: Car },
     { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
+    { href: '/admin/payments', label: 'Payments', icon: CreditCard },
+    { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ],
 }

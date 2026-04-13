@@ -2,6 +2,12 @@ export type UserRole = 'car_owner' | 'repairer' | 'parts_seller' | 'admin'
 
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
+export type PaymentStatus = 'unpaid' | 'pending' | 'in_escrow' | 'released' | 'refunded'
+
+export type EscrowStatus = 'pending' | 'held' | 'released' | 'refunded'
+
+export type TransactionType = 'escrow_hold' | 'escrow_release' | 'withdrawal'
+
 export interface Profile {
   id: string
   role: UserRole
@@ -121,7 +127,43 @@ export interface Booking {
   scheduled_date: string
   description: string
   status: BookingStatus
+  agreed_price: number | null
+  payment_status: PaymentStatus
   created_at: string
   repairer?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'city'>
   customer?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+}
+
+export interface Wallet {
+  id: string
+  user_id: string
+  balance: number
+  updated_at: string
+}
+
+export interface EscrowPayment {
+  id: string
+  payer_id: string
+  payee_id: string
+  amount: number
+  paystack_ref: string | null
+  status: EscrowStatus
+  related_type: 'booking' | 'order'
+  related_id: string
+  created_at: string
+  released_at: string | null
+  payer?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+  payee?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+}
+
+export interface WalletTransaction {
+  id: string
+  user_id: string
+  wallet_id: string | null
+  type: TransactionType
+  amount: number
+  description: string | null
+  related_type: string | null
+  related_id: string | null
+  created_at: string
 }

@@ -263,6 +263,8 @@ CREATE TABLE bookings (
   scheduled_date date NOT NULL,
   description    text NOT NULL,
   status         booking_status NOT NULL DEFAULT 'pending',
+  agreed_price   numeric,
+  payment_status text NOT NULL DEFAULT 'unpaid',
   created_at     timestamptz NOT NULL DEFAULT now()
 );
 
@@ -276,3 +278,64 @@ CREATE POLICY "Customers can create bookings"
 
 CREATE POLICY "Participants can update bookings"
   ON bookings FOR UPDATE USING (auth.uid() = repairer_id OR auth.uid() = customer_id);
+
+-- ── 15. Wallets ───────────────────────────────────────────────
+CREATE TABLE wallets (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid NOT NULL UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
+  balance     numeric NOT NULL DEFAULT 0,
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own wallet"
+  ON wallets FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage wallets"
+  ON wallets FOR ALL USING (true);
+
+-- ── 16. Escrow payments ───────────────────────────────────────
+CREATE TYPE payment_status AS ENUM ('pending', 'held', 'released', 'refunded');
+
+CREATE TABLE escrow_payments (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  payer_id      uuid NOT NULL REFERENCES profiles(id),
+  payee_id      uuid NOT NULL REFERENCES profiles(id),
+  amount        numeric NOT NULL,
+  paystack_ref  text,
+  status        payment_status NOT NULL DEFAULT 'pending',
+  related_type  text NOT NULL,
+  related_id    uuid NOT NULL,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  released_at   timestamptz
+);
+
+ALTER TABLE escrow_payments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Payer and payee can view their escrow payments"
+  ON escrow_payments FOR SELECT USING (auth.uid() = payer_id OR auth.uid() = payee_id);
+
+-- ── 17. Wallet transactions ───────────────────────────────────
+CREATE TYPE transaction_type AS ENUM ('escrow_hold', 'escrow_release', 'withdrawal');
+
+CREATE TABLE wallet_transactions (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       uuid NOT NULL REFERENCES profiles(id),
+  wallet_id     uuid REFERENCES wallets(id),
+  type          transaction_type NOT NULL,
+  amount        numeric NOT NULL,
+  description   text,
+  related_type  text,
+  related_id    uuid,
+  created_at    timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE wallet_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own transactions"
+  ON wallet_transactions FOR SELECT USING (auth.uid() = user_id);
+
+-- Add payment_status to orders
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status text NOT NULL DEFAULT 'unpaid';
+
