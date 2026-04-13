@@ -120,7 +120,7 @@ export default async function HomePage() {
           <section className="features-section container">
             <div className="section-header">
               <div>
-                <span className="section-label">On ShopMeco</span>
+                <span className="section-label">On ShopMecko</span>
                 <h2 className="section-heading" style={{ marginBottom: 0 }}>Repairers near you</h2>
               </div>
               <Link href="/repairers" className="btn btn--ghost btn--sm">
@@ -207,7 +207,7 @@ export default async function HomePage() {
             />
             <div className="cta-overlay" />
             <div className="cta-box">
-              <h2 className="section-heading" style={{ color: '#fff' }}>Join ShopMeco</h2>
+              <h2 className="section-heading" style={{ color: '#fff' }}>Join ShopMecko</h2>
               <p style={{ color: 'rgba(255,255,255,0.65)', marginBottom: 'var(--space-8)', fontSize: '1.0625rem' }}>
                 Car owners, mechanics, and parts sellers are already on here. Sign up in under a minute.
               </p>
@@ -221,7 +221,7 @@ export default async function HomePage() {
       </main>
 
       <footer style={{ borderTop: '1px solid var(--color-border)', padding: 'var(--space-8) 0', textAlign: 'center', color: 'var(--color-text-400)', fontSize: '0.875rem' }}>
-        <div className="container">© {new Date().getFullYear()} ShopMeco. All rights reserved.</div>
+        <div className="container">© {new Date().getFullYear()} ShopMecko. All rights reserved.</div>
       </footer>
     </>
   )

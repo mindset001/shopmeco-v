@@ -46,7 +46,7 @@ export default function LoginPage() {
         <div className="auth-card">
           <div className="auth-logo">
             <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-            ShopMeco
+            ShopMecko
           </div>
 
           <h1 className="auth-title">Welcome back</h1>

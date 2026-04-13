@@ -78,7 +78,7 @@ export function ProofStats() {
     <div className="proof-banner__stats" ref={ref}>
       <div>
         <div className="proof-banner__stat-value">{repairers.toLocaleString()}+</div>
-        <div className="proof-banner__stat-label">Repairers on ShopMeco</div>
+        <div className="proof-banner__stat-label">Repairers on ShopMecko</div>
       </div>
       <div>
         <div className="proof-banner__stat-value">{(listings / 1000).toFixed(0)}k+</div>

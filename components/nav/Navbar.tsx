@@ -47,7 +47,7 @@ export default function Navbar({ profile }: NavbarProps) {
       <div className="navbar__inner">
         <Link href="/" className="navbar__brand">
           <Wrench size={22} className="navbar__logo-icon" />
-          <span>ShopMeco</span>
+          <span>ShopMecko</span>
         </Link>
 
         <div className="navbar__links">

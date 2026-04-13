@@ -58,7 +58,7 @@ export default function RegisterPage() {
       return
     }
 
-    toast('You\'re in. Welcome to ShopMeco.', 'success')
+    toast('You\'re in. Welcome to ShopMecko.', 'success')
     router.push('/dashboard')
     router.refresh()
   }
@@ -70,7 +70,7 @@ export default function RegisterPage() {
         <div className="auth-card">
           <div className="auth-logo">
             <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-            ShopMeco
+            ShopMecko
           </div>
 
           <h1 className="auth-title">
@@ -79,7 +79,7 @@ export default function RegisterPage() {
           <p className="auth-subtitle">
             {step === 1
               ? 'Let’s get you set up.'
-              : 'What brings you to ShopMeco?'}
+              : 'What brings you to ShopMecko?'}
           </p>
 
           <form className="auth-form" onSubmit={handleSubmit}>

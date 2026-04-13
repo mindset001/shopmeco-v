@@ -22,10 +22,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     supabase.from('profiles').select('full_name, city, state, avatar_url').eq('id', id).single(),
     supabase.from('repairer_details').select('workshop_name, rating, specializations').eq('id', id).single(),
   ])
-  if (!repairer) return { title: 'Repairer not found — ShopMeco' }
+  if (!repairer) return { title: 'Repairer not found — ShopMecko' }
   const title = details?.workshop_name
-    ? `${details.workshop_name} (${repairer.full_name}) — ShopMeco`
-    : `${repairer.full_name} — Repairer on ShopMeco`
+    ? `${details.workshop_name} (${repairer.full_name}) — ShopMecko`
+    : `${repairer.full_name} — Repairer on ShopMecko`
   const location = repairer.city ? ` in ${repairer.city}${repairer.state ? `, ${repairer.state}` : ''}` : ''
   const specs = details?.specializations?.length ? ` Specializes in ${details.specializations.slice(0, 3).join(', ')}.` : ''
   return {

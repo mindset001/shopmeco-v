@@ -1,5 +1,5 @@
 -- ============================================================
--- ShopMeco — Supabase SQL Schema
+-- ShopMecko — Supabase SQL Schema
 -- Run this in Supabase Dashboard > SQL Editor
 -- ============================================================
 

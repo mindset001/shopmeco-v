@@ -21,10 +21,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .select('name, description, images, category, brand')
     .eq('id', id)
     .single()
-  if (!product) return { title: 'Product not found — ShopMeco' }
+  if (!product) return { title: 'Product not found — ShopMecko' }
   return {
-    title: `${product.name} — ShopMeco Marketplace`,
-    description: product.description ?? `Buy ${product.name}${product.brand ? ` by ${product.brand}` : ''} on ShopMeco.`,
+    title: `${product.name} — ShopMecko Marketplace`,
+    description: product.description ?? `Buy ${product.name}${product.brand ? ` by ${product.brand}` : ''} on ShopMecko.`,
     openGraph: {
       title: product.name,
       description: product.description ?? undefined,

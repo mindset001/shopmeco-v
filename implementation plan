@@ -1,0 +1,303 @@
+# ShopMecko — Auto Marketplace Platform
+
+A multi-sided marketplace connecting **Car Owners**, **Car Repairers**, and **Spare Parts Sellers**, managed by an **Admin**.
+
+---
+
+## Overview
+
+**ShopMecko** is a full-stack web application built with Next.js (App Router), styled with Vanilla CSS, and powered by Supabase for auth, database, and real-time features. The platform brings together the auto repair ecosystem in one unified experience.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> This is a significant full-stack project. The plan uses **Supabase** (free tier available) for the backend. You will need to create a free Supabase project at [supabase.com](https://supabase.com) and provide the API keys. We can scaffold everything and add keys after.
+
+> [!WARNING]
+> Real-time chat requires Supabase Realtime (included in Supabase free tier). Location-based repairer search will use a browser Geolocation API + coordinates stored in Supabase — no paid map API needed for MVP.
+
+> [!NOTE]
+> Phase 1 (this plan) covers the full working MVP. Payment processing (e.g., Stripe) is noted as a future enhancement and is NOT included in this plan.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | **Next.js 14** (App Router, TypeScript) |
+| Styling | **Vanilla CSS** (custom design system) |
+| Backend/DB | **Supabase** (PostgreSQL + Auth + Storage + Realtime) |
+| Auth | **Supabase Auth** (email/password + role-based) |
+| Images | **Supabase Storage** |
+| Realtime Chat | **Supabase Realtime** |
+| Icons | **Lucide React** |
+| Fonts | **Google Fonts** (Inter + Outfit) |
+
+---
+
+## Proposed Changes
+
+### Core Architecture
+
+#### [NEW] Project Initialization (Next.js 14 + TypeScript)
+```
+/Users/user/Desktop/demlinks/shopmeco/
+├── app/                        # Next.js App Router
+│   ├── (auth)/                 # Auth group
+│   │   ├── login/
+│   │   ├── register/
+│   │   └── layout.tsx
+│   ├── (dashboard)/            # Authenticated routes
+│   │   ├── dashboard/          # Role-based dashboard
+│   │   ├── profile/
+│   │   ├── chat/
+│   │   ├── orders/
+│   │   └── layout.tsx
+│   ├── marketplace/            # Spare parts marketplace (public browse)
+│   ├── repairers/              # Find repairers (public)
+│   ├── admin/                  # Admin panel
+│   └── page.tsx                # Landing page
+├── components/
+│   ├── ui/                     # Reusable UI components
+│   ├── auth/
+│   ├── marketplace/
+│   ├── repairers/
+│   ├── chat/
+│   ├── orders/
+│   └── admin/
+├── lib/
+│   ├── supabase/               # Supabase client & helpers
+│   ├── hooks/                  # Custom React hooks
+│   └── utils/
+├── styles/
+│   └── globals.css             # Full design system
+└── types/                      # TypeScript types
+```
+
+---
+
+### Database Schema (Supabase PostgreSQL)
+
+#### Users & Profiles
+```sql
+-- profiles table (extends Supabase auth.users)
+profiles {
+  id: uuid (FK auth.users)
+  role: enum('car_owner', 'repairer', 'parts_seller', 'admin')
+  full_name: text
+  phone: text
+  avatar_url: text
+  bio: text
+  address: text
+  city: text
+  state: text
+  latitude: float
+  longitude: float
+  created_at: timestamptz
+}
+
+-- repairer_details (extra info for repairers)
+repairer_details {
+  id: uuid (FK profiles)
+  specializations: text[]
+  years_experience: int
+  rating: float
+  total_reviews: int
+  is_available: bool
+  workshop_name: text
+  workshop_images: text[]
+  hourly_rate: numeric
+}
+```
+
+#### Spare Parts Marketplace
+```sql
+-- products
+products {
+  id: uuid
+  seller_id: uuid (FK profiles)
+  name: text
+  description: text
+  price: numeric
+  stock_quantity: int
+  category: text
+  brand: text
+  compatible_cars: text[]
+  images: text[]
+  is_active: bool
+  created_at: timestamptz
+}
+
+-- orders
+orders {
+  id: uuid
+  buyer_id: uuid (FK profiles)
+  seller_id: uuid (FK profiles)
+  product_id: uuid (FK products)
+  quantity: int
+  total_price: numeric
+  status: enum('pending','confirmed','shipped','delivered','cancelled')
+  delivery_address: text
+  created_at: timestamptz
+}
+```
+
+#### Chat & Messaging
+```sql
+-- conversations
+conversations {
+  id: uuid
+  participant_1: uuid (FK profiles)
+  participant_2: uuid (FK profiles)
+  created_at: timestamptz
+}
+
+-- messages
+messages {
+  id: uuid
+  conversation_id: uuid (FK conversations)
+  sender_id: uuid (FK profiles)
+  content: text
+  is_read: bool
+  created_at: timestamptz
+}
+```
+
+#### Reviews
+```sql
+-- reviews
+reviews {
+  id: uuid
+  repairer_id: uuid (FK profiles)
+  reviewer_id: uuid (FK profiles)
+  rating: int (1–5)
+  comment: text
+  created_at: timestamptz
+}
+```
+
+---
+
+### Pages & Features
+
+#### [NEW] Landing Page (`app/page.tsx`)
+- Hero section with clear value proposition
+- "Find a Repairer Near You" search bar
+- Feature highlights for all 3 user types
+- Marketplace preview
+- Top-rated repairers showcase
+- CTA to register
+
+#### [NEW] Authentication (`app/(auth)/`)
+- Unified login/register page
+- **Role selection** on sign-up: Car Owner / Repairer / Parts Seller
+- Profile completion flow after registration
+
+#### [NEW] Role-Based Dashboards (`app/(dashboard)/dashboard/`)
+- **Car Owner Dashboard**: Nearby repairers, recent orders, active chats, service history
+- **Repairer Dashboard**: Incoming service requests, recent chats, order history, profile stats, rating
+- **Parts Seller Dashboard**: Product listings, order management, revenue summary, analytics
+- **Admin Dashboard**: All users, product approvals, order overview, reported content
+
+#### [NEW] Marketplace (`app/marketplace/`)
+- Product grid with filters (category, brand, price range, compatible car)
+- Product detail page
+- Add to cart → Place order flow
+- Seller profile link on each product
+
+#### [NEW] Repairer Search (`app/repairers/`)
+- Search by city/area or use current location
+- Filter by specialization, rating, availability
+- Repairer cards with rating, distance, hourly rate
+- Repairer detail page with full profile, reviews, gallery
+
+#### [NEW] Profile Pages
+- Public profile for repairers and sellers
+- Edit profile (avatar upload, bio, specializations, location)
+- Repairer: show reviews, gallery, availability toggle
+
+#### [NEW] Chat System (`app/(dashboard)/chat/`)
+- Conversation list with unread counts
+- Real-time messaging (Supabase Realtime)
+- Start chat from repairer profile or seller profile
+
+#### [NEW] Orders (`app/(dashboard)/orders/`)
+- Order history for buyers (car owners + repairers)
+- Order management for sellers (confirm, ship, deliver)
+- Order detail view with status timeline
+
+#### [NEW] Admin Panel (`app/admin/`)
+- User management (list, view, suspend)
+- Product management (approve, reject, remove)
+- Order overview
+- Platform statistics
+
+#### [NEW] Core UI Components (`components/ui/`)
+- Button, Input, Card, Badge, Modal, Dropdown
+- Avatar, Rating Stars, Loader, Toast notifications
+- Search Bar, Filter Panel
+- Navigation (Navbar + Sidebar)
+
+---
+
+## Design System
+
+### Color Palette
+```css
+/* Primary: Deep Automotive Blue */
+--color-primary: #1a3a5c;
+--color-primary-light: #2563eb;
+--color-accent: #f97316; /* Energetic orange */
+--color-surface: #0f172a; /* Dark base */
+--color-surface-2: #1e293b;
+--color-surface-3: #334155;
+--color-text: #f8fafc;
+--color-text-muted: #94a3b8;
+--color-success: #10b981;
+--color-warning: #f59e0b;
+--color-danger: #ef4444;
+```
+
+### Typography
+- **Display**: Outfit (headings)
+- **Body**: Inter (UI text)
+
+### Visual Language
+- Dark mode first, premium automotive feel
+- Glassmorphism cards for dashboards
+- Smooth hover transitions + micro-animations
+- Orange accent for CTAs and highlights
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Do you already have a Supabase project?** If not, I'll scaffold everything and document where to add your keys in `.env.local`.
+
+> [!NOTE]
+> **Location-based search**: For MVP, users enter their city/state. Should I also include GPS-based "Find repairers within X km of me" using browser geolocation? (Recommended — adds a great UX touch)
+
+> [!NOTE]
+> **Payment**: Should the MVP include any payment/escrow feature, or is it contact-first (users negotiate and pay outside the platform)?
+
+---
+
+## Verification Plan
+
+### Automated
+- `npm run build` — TypeScript + Next.js build validation
+- Test all page routes load correctly
+
+### Browser Testing
+- Register as each user type and complete profile
+- Parts seller: upload a product
+- Car owner: search repairers, start a chat, place an order
+- Admin: view dashboard and manage users
+
+### Manual
+- Verify real-time chat messages appear without page refresh
+- Confirm role-based route protection (admin-only routes, etc.)

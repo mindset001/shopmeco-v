@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'ShopMeco — Auto Marketplace',
+  title: 'ShopMecko — Auto Marketplace',
   description:
-    'Connect with car repairers and spare parts sellers near you. ShopMeco brings the auto repair ecosystem together.',
+    'Connect with car repairers and spare parts sellers near you. ShopMecko brings the auto repair ecosystem together.',
 }
 
 export default function RootLayout({
