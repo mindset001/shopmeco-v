@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Navbar from '@/components/nav/Navbar'
 import ImageUploadGrid from '@/components/ui/ImageUploadGrid'
+import { CAR_MAKES, CAR_MODELS, CAR_YEARS } from '@/lib/data/cars'
 
 export default function NewListingPage() {
   const router = useRouter()
@@ -28,11 +29,13 @@ export default function NewListingPage() {
     stock_quantity: '1',
     category: '',
     brand: '',
-    compatible_cars: '',
+    carMake: '',
+    carModel: '',
+    carYear: '',
   })
 
   function update(field: keyof typeof form) {
-    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm({ ...form, [field]: e.target.value })
   }
 
@@ -43,6 +46,15 @@ export default function NewListingPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { toast('Not authenticated', 'error'); setSaving(false); return }
 
+    // Build compatible_cars string
+    const compatibleCars: string[] = []
+    if (form.carMake && form.carModel) {
+      const carString = form.carYear 
+        ? `${form.carMake} ${form.carModel} ${form.carYear}`
+        : `${form.carMake} ${form.carModel}`
+      compatibleCars.push(carString)
+    }
+
     const { error } = await supabase.from('products').insert({
       seller_id: user.id,
       name: form.name,
@@ -51,7 +63,7 @@ export default function NewListingPage() {
       stock_quantity: parseInt(form.stock_quantity),
       category: form.category || null,
       brand: form.brand || null,
-      compatible_cars: form.compatible_cars.split(',').map((s) => s.trim()).filter(Boolean),
+      compatible_cars: compatibleCars,
       images: imageUrls,
       is_active: true,
     })
@@ -60,6 +72,8 @@ export default function NewListingPage() {
     toast('Listing created!', 'success')
     router.push('/marketplace')
   }
+
+  const availableModels = form.carMake ? (CAR_MODELS[form.carMake] || []) : []
 
   return (
     <>
@@ -81,9 +95,53 @@ export default function NewListingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
             <Input label="Category" value={form.category} onChange={update('category')} placeholder="e.g. Engine, Brakes" />
-            <Input label="Brand" value={form.brand} onChange={update('brand')} placeholder="e.g. Toyota, Bosch" />
+            <Input label="Brand" value={form.brand} onChange={update('brand')} placeholder="e.g. Bosch, Denso" />
           </div>
-          <Input label="Compatible cars (comma-separated)" value={form.compatible_cars} onChange={update('compatible_cars')} placeholder="e.g. Toyota Camry 2018-2022, Honda Accord" />
+
+          {/* Car compatibility dropdowns */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+            <div className="input-group">
+              <label className="input-label">Car Make</label>
+              <select
+                className="input"
+                value={form.carMake}
+                onChange={update('carMake')}
+              >
+                <option value="">Select make...</option>
+                {CAR_MAKES.map((make) => (
+                  <option key={make} value={make}>{make}</option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group">
+              <label className="input-label">Car Model</label>
+              <select
+                className="input"
+                value={form.carModel}
+                onChange={update('carModel')}
+                disabled={!form.carMake}
+              >
+                <option value="">Select model...</option>
+                {availableModels.map((model) => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">Car Year (optional)</label>
+            <select
+              className="input"
+              value={form.carYear}
+              onChange={update('carYear')}
+            >
+              <option value="">All years</option>
+              {CAR_YEARS.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
 
           {userId && (
             <ImageUploadGrid

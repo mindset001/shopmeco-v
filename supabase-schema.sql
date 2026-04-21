@@ -65,7 +65,17 @@ CREATE TABLE repairer_details (
   is_available      boolean DEFAULT true,
   workshop_name     text,
   workshop_images   text[] DEFAULT '{}',
-  hourly_rate       numeric
+  hourly_rate       numeric,
+  job_title         text,
+  fixed_price       numeric,
+  inspection_fee    numeric,
+  vehicle_brands    text[] DEFAULT '{}',
+  services          text[] DEFAULT '{}',
+  service_modes     text[] DEFAULT '{workshop}',
+  available_days    text[] DEFAULT '{}',
+  available_from    text DEFAULT '08:00',
+  available_to      text DEFAULT '18:00',
+  completed_jobs    int DEFAULT 0
 );
 
 ALTER TABLE repairer_details ENABLE ROW LEVEL SECURITY;
@@ -338,4 +348,37 @@ CREATE POLICY "Users can view their own transactions"
 
 -- Add payment_status to orders
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status text NOT NULL DEFAULT 'unpaid';
+
+-- ── 18. Notifications ────────────────────────────────────────
+CREATE TYPE notification_type AS ENUM ('booking_request', 'booking_confirmed', 'booking_completed', 'message', 'order_update', 'payment_released');
+
+CREATE TABLE notifications (
+  id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id        uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  type           notification_type NOT NULL,
+  title          text NOT NULL,
+  body           text,
+  data           jsonb DEFAULT '{}',
+  related_id     uuid,
+  is_read        boolean NOT NULL DEFAULT false,
+  created_at     timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own notifications"
+  ON notifications FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can create notifications"
+  ON notifications FOR INSERT USING (true);
+
+CREATE POLICY "Users can update their own notifications"
+  ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE INDEX notifications_user_id_idx ON notifications(user_id);
+CREATE INDEX notifications_user_read_idx ON notifications(user_id, is_read);
+CREATE INDEX notifications_created_idx ON notifications(created_at DESC);
+
+-- Enable realtime for notifications
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 

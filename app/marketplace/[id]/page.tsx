@@ -6,6 +6,7 @@ import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
 import { formatDate } from '@/lib/utils/helpers'
 import OrderButton from './OrderButton'
+import ChatButton from './ChatButton'
 import type { Metadata } from 'next'
 import LocationMapClient from '@/components/ui/LocationMapClient'
 
@@ -129,7 +130,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </div>
 
             {profile && profile.id !== product.seller_id && (
-              <OrderButton product={product} buyerId={profile.id} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <OrderButton product={product} buyerId={profile.id} />
+                <ChatButton
+                  sellerId={product.seller_id}
+                  sellerName={(product as any).profiles?.full_name}
+                  productName={product.name}
+                  buyerId={profile.id}
+                />
+              </div>
             )}
             {!profile && (
               <Link href="/login" className="btn btn--primary btn--lg btn--full">

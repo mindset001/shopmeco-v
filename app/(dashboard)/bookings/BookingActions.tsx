@@ -12,13 +12,23 @@ interface Props {
   isRepairer: boolean
   agreedPrice?: number | null
   paymentStatus?: string
+  customerId?: string
+  repairerId?: string
 }
 
-export default function BookingActions({ bookingId, currentStatus, isRepairer, agreedPrice, paymentStatus }: Props) {
+export default function BookingActions({ bookingId, currentStatus, isRepairer, agreedPrice, paymentStatus, customerId, repairerId }: Props) {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [showPriceForm, setShowPriceForm] = useState(false)
   const [price, setPrice] = useState('')
+
+  async function createNotification(action: string) {
+    await fetch('/api/notifications/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId, action }),
+    }).catch(() => {})
+  }
 
   // Repairer: advance from confirmed → completed, or cancel
   const canMarkComplete = isRepairer && currentStatus === 'confirmed'
@@ -31,7 +41,12 @@ export default function BookingActions({ bookingId, currentStatus, isRepairer, a
     const supabase = createClient()
     const { error } = await supabase.from('bookings').update({ status }).eq('id', bookingId)
     if (error) { toast(error.message, 'error') }
-    else { toast('Booking updated.', 'success'); router.refresh() }
+    else { 
+      toast('Booking updated.', 'success')
+      if (actionKey === 'complete') await createNotification('completed')
+      if (actionKey === 'confirm') await createNotification('confirmed')
+      router.refresh() 
+    }
     setLoading(null)
   }
 
@@ -45,7 +60,12 @@ export default function BookingActions({ bookingId, currentStatus, isRepairer, a
       .update({ status: 'confirmed', agreed_price: numPrice })
       .eq('id', bookingId)
     if (error) { toast(error.message, 'error') }
-    else { toast('Booking confirmed.', 'success'); setShowPriceForm(false); router.refresh() }
+    else { 
+      toast('Booking confirmed.', 'success')
+      await createNotification('confirmed')
+      setShowPriceForm(false)
+      router.refresh() 
+    }
     setLoading(null)
   }
 

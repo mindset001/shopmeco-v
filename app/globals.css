@@ -894,9 +894,11 @@ form > .btn {
   .sidebar { display: none; }
   .dashboard-main { max-width: 100%; }
 }
+
 @media (max-width: 768px) {
   .navbar__links { display: none; }
   .navbar__actions > a, .navbar__action { display: none; }
+  .navbar__role-badge { display: none; }
   .navbar__hamburger { display: flex; }
   .navbar__mobile {
     display: flex; flex-direction: column; gap: 2px;
@@ -913,15 +915,98 @@ form > .btn {
   .navbar__user .navbar__dropdown { display: none; }
   .navbar__user { display: none; }
 
-  .product-grid { grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); }
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); }
   .role-grid { grid-template-columns: 1fr; }
   .hero { grid-template-columns: 1fr; }
   .hero__visual { display: none; }
   .proof-banner { height: 200px; }
-  .proof-banner__stats { gap: var(--space-6); }
+  .proof-banner__stats { gap: var(--space-6); flex-wrap: wrap; }
   .proof-banner__stat-value { font-size: 2rem; }
+  .proof-banner__stat { flex: 1; min-width: 120px; }
   .hero__ctas { flex-direction: column; }
+  .hero__ctas .btn { width: 100%; }
   .profile-hero { flex-direction: column; }
+  .profile-hero__avatar { width: 100%; }
   .chat-sidebar { display: none; }
+  .chat-layout { flex-direction: column; }
   .dashboard-main { padding: var(--space-4); }
+  
+  /* Form improvements */
+  .input-group { width: 100%; }
+  .form-label { font-size: 0.9rem; }
+  
+  /* Product page improvements */
+  [style*="grid-template-columns: '1fr 420px'"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Card spacing */
+  .card { padding: var(--space-4) !important; margin-bottom: var(--space-4); }
+  
+  /* Button improvements */
+  .btn { border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 0.95rem; }
+  .btn--lg { padding: var(--space-4) var(--space-6); }
+  
+  /* Chat improvements */
+  .chat-messages { padding: var(--space-3); }
+  .chat-bubble { max-width: 85%; }
+  .chat-input-bar { padding: var(--space-3); gap: var(--space-2); }
+  
+  /* Booking form improvements */
+  #book { padding: var(--space-5) !important; }
+  
+  /* Table improvements */
+  table { font-size: 0.85rem; }
+  th, td { padding: var(--space-2) var(--space-3); }
 }
+
+@media (max-width: 480px) {
+  .container { padding: 0 var(--space-3); }
+  .section { padding: var(--space-8) 0; }
+  
+  .navbar__inner { padding: var(--space-2); }
+  .navbar__brand span { display: none; }
+  
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  
+  /* Page header */
+  .page-header { margin-bottom: var(--space-4); }
+  .page-title { font-size: 1.5rem; }
+  .page-subtitle { font-size: 0.9rem; }
+  
+  /* Booking form */
+  .form-group { margin-bottom: var(--space-3); }
+  [style*="grid-template-columns: '1fr 1fr'"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Modal/Dialog improvements */
+  .modal { width: 95vw; max-height: 90vh; }
+  
+  /* Cards */
+  .card { border-radius: var(--radius-lg); }
+  
+  /* Badges */
+  .badge { font-size: 0.7rem; padding: var(--space-1) var(--space-2); }
+  
+  /* Typography */
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.4rem; }
+  h3 { font-size: 1.1rem; }
+  
+  /* Navigation improvements */
+  .sidebar__link { font-size: 0.9rem; padding: var(--space-2) var(--space-4); }
+  .sidebar__link span { margin-left: var(--space-2); }
+  
+  /* Image upload grid */
+  .input-group { width: 100%; }
+  
+  /* Marketplace search */
+  .input[placeholder*="Search"] { width: 100%; }
+  
+  /* Flex wrap improvements */
+  [style*="flex-wrap: wrap"] { flex-direction: column !important; }
+  [style*="display: flex"] { flex-direction: column !important; }
+  [style*="gap: '"] { gap: var(--space-2) !important; }
+}
+

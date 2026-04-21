@@ -41,7 +41,18 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${activeConvId}` },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new])
+          const newMessage = payload.new
+          setMessages((prev) => [...prev, newMessage])
+          
+          // Only notify if message is from someone else and browser has permission
+          if (newMessage.sender_id !== profile.id && Notification.permission === 'granted') {
+            const senderName = activeConv?.other_user?.full_name || 'Someone'
+            new Notification('New message from ' + senderName, {
+              body: newMessage.content.substring(0, 100),
+              icon: activeConv?.other_user?.avatar_url || '/images/default-avatar.png',
+              badge: '/images/icon-badge.png',
+            })
+          }
         }
       )
       .subscribe()

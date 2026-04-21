@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, Wrench, Clock, MessageSquare, Calendar } from 'lucide-react'
+import { MapPin, Wrench, Clock, MessageSquare, Calendar, BadgeCheck, ShieldAlert } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
@@ -81,7 +81,7 @@ export default async function RepairerDetailPage({ params }: PageProps) {
                   {details.workshop_name}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-4)', alignItems: 'center' }}>
                 {details && <RatingStars rating={details.rating ?? 0} showValue size={16} />}
                 <span style={{ color: 'var(--color-text-300)', fontSize: '0.875rem' }}>
                   {details?.total_reviews ?? 0} reviews
@@ -89,6 +89,9 @@ export default async function RepairerDetailPage({ params }: PageProps) {
                 {details?.is_available
                   ? <span className="badge badge--success">Available</span>
                   : <span className="badge badge--default">Currently Busy</span>}
+                {repairer.is_verified
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--color-accent)', fontWeight: 700, fontSize: '0.85rem' }}><BadgeCheck size={15} /> Verified Mechanic</span>
+                  : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: '#b45309', fontWeight: 700, fontSize: '0.85rem' }}><ShieldAlert size={15} /> Pending Verification</span>}
               </div>
 
               <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap', color: 'var(--color-text-300)', fontSize: '0.9rem' }}>
@@ -105,13 +108,24 @@ export default async function RepairerDetailPage({ params }: PageProps) {
             </div>
 
             {profile && profile.id !== id && (
-              <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'center' }}>
                 <Link href={`/chat?with=${id}`} className="btn btn--secondary btn--lg">
                   <MessageSquare size={18} /> Message
                 </Link>
-                <Link href="#book" className="btn btn--primary btn--lg">
-                  <Calendar size={18} /> Book Appointment
-                </Link>
+                {repairer.is_verified ? (
+                  <Link href="#book" className="btn btn--primary btn--lg">
+                    <Calendar size={18} /> Book Appointment
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="btn btn--primary btn--lg"
+                    title="This mechanic has not been verified by ShopMecko admin yet"
+                    style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                  >
+                    <Calendar size={18} /> Book Appointment
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -179,13 +193,33 @@ export default async function RepairerDetailPage({ params }: PageProps) {
           )}
         </div>
 
+        {/* Unverified warning */}
+        {!repairer.is_verified && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)',
+            background: 'color-mix(in srgb, #f59e0b 10%, var(--color-surface))',
+            border: '1.5px solid #f59e0b',
+            borderRadius: 'var(--radius-lg)',
+            padding: 'var(--space-5)',
+            marginTop: 'var(--space-6)',
+          }}>
+            <ShieldAlert size={22} style={{ color: '#b45309', flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <div style={{ fontWeight: 700, color: '#92400e', marginBottom: 4 }}>Pending Admin Verification</div>
+              <div style={{ fontSize: '0.9rem', color: '#78350f', lineHeight: 1.6 }}>
+                This mechanic&apos;s profile is still being reviewed by our team. You can browse their profile and send a message, but booking is only available after verification is complete.
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Booking form + review form */}
         {profile && profile.id !== id && (
           <div
             id="book"
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-6)', marginTop: 'var(--space-8)' }}
           >
-            <BookingForm repairerId={id} customerId={profile.id} />
+            <BookingForm repairerId={id} customerId={profile.id} isVerified={repairer.is_verified} />
             {!hasReviewed ? (
               <ReviewForm repairerId={id} reviewerId={profile.id} />
             ) : (

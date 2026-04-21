@@ -48,20 +48,45 @@ export default function ImageUploadGrid({
     const newUrls: string[] = []
 
     for (const item of newItems) {
-      const ext = item.file.name.split('.').pop()
-      const path = `${userId}/${item.id}.${ext}`
-      const { error } = await supabase.storage.from(bucket).upload(path, item.file)
+      try {
+        const ext = item.file.name.split('.').pop()
+        const path = `${userId}/${item.id}.${ext}`
+        
+        // Check file size (max 5MB)
+        if (item.file.size > 5 * 1024 * 1024) {
+          toast('File too large. Max 5MB per image.', 'error')
+          setPending((prev) => prev.filter((p) => p.id !== item.id))
+          URL.revokeObjectURL(item.preview)
+          continue
+        }
 
-      setPending((prev) => prev.filter((p) => p.id !== item.id))
-      URL.revokeObjectURL(item.preview)
+        const { error } = await supabase.storage.from(bucket).upload(path, item.file, {
+          cacheControl: '0', // Don't cache to ensure fresh uploads
+          upsert: false,
+        })
 
-      if (error) {
-        toast('Upload failed: ' + error.message, 'error')
-        continue
+        setPending((prev) => prev.filter((p) => p.id !== item.id))
+        URL.revokeObjectURL(item.preview)
+
+        if (error) {
+          console.error('Upload error:', error)
+          toast('Upload failed: ' + error.message, 'error')
+          continue
+        }
+
+        // Get signed URL for public access
+        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
+        
+        // Add cache busting parameter
+        const urlWithCache = `${publicUrl}?t=${Date.now()}`
+        newUrls.push(urlWithCache)
+        toast('Image uploaded successfully', 'success')
+      } catch (err) {
+        console.error('Unexpected error during upload:', err)
+        toast('An error occurred during upload', 'error')
+        setPending((prev) => prev.filter((p) => p.id !== item.id))
+        URL.revokeObjectURL(item.preview)
       }
-
-      const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
-      newUrls.push(publicUrl)
     }
 
     if (newUrls.length > 0) {

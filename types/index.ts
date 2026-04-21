@@ -36,6 +36,16 @@ export interface RepairerDetails {
   workshop_name: string | null
   workshop_images: string[]
   hourly_rate: number | null
+  job_title: string | null
+  fixed_price: number | null
+  inspection_fee: number | null
+  vehicle_brands: string[]
+  services: string[]
+  service_modes: string[]
+  available_days: string[]
+  available_from: string
+  available_to: string
+  completed_jobs: number
 }
 
 export interface RepairerWithProfile extends Profile {

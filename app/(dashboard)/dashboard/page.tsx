@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import { createClient } from '@/lib/supabase/server'
-import { formatRelativeTime } from '@/lib/utils/helpers'
+import { formatRelativeTime, formatDate } from '@/lib/utils/helpers'
 import Badge from '@/components/ui/Badge'
-import type { OrderStatus } from '@/types'
+import Avatar from '@/components/ui/Avatar'
+import SymptomPicker from './SymptomPicker'
+import type { OrderStatus, BookingStatus } from '@/types'
 
 const statusVariant: Record<OrderStatus, 'default' | 'warning' | 'success' | 'danger' | 'info'> = {
   pending: 'warning',
@@ -14,6 +16,35 @@ const statusVariant: Record<OrderStatus, 'default' | 'warning' | 'success' | 'da
   cancelled: 'danger',
 }
 
+const bookingVariant: Record<BookingStatus, 'default' | 'warning' | 'success' | 'danger' | 'info'> = {
+  pending: 'warning',
+  confirmed: 'info',
+  completed: 'success',
+  cancelled: 'danger',
+}
+
+const SERVICE_CATEGORIES = [
+  { label: 'Engine & Performance', icon: '🔧', spec: 'Engine' },
+  { label: 'Electrical & Diagnostics', icon: '⚡', spec: 'Electrical' },
+  { label: 'Transmission', icon: '⚙️', spec: 'Transmission' },
+  { label: 'Suspension & Steering', icon: '🛞', spec: 'Suspension' },
+  { label: 'Brakes', icon: '🛑', spec: 'Brakes' },
+  { label: 'AC & Cooling', icon: '❄️', spec: 'AC' },
+  { label: 'Fuel System', icon: '⛽', spec: 'Fuel' },
+  { label: 'General Maintenance', icon: '🔩', spec: 'Maintenance' },
+]
+
+const SYMPTOMS = [
+  'Car not starting',
+  'Car shaking / vibrating',
+  'Warning light on dashboard',
+  'Strange noise',
+  'Burning smell',
+  'Poor fuel consumption',
+  'Overheating',
+  'Gear problems',
+]
+
 export default async function DashboardPage() {
   const profile = await getCurrentProfile()
   if (!profile) redirect('/login')
@@ -21,76 +52,175 @@ export default async function DashboardPage() {
   const supabase = await createClient()
 
   if (profile.role === 'car_owner') {
-    const [{ data: orders }, { count: chatCount }, { count: carCount }] = await Promise.all([
-      supabase.from('orders').select('*, products(name, images)').eq('buyer_id', profile.id).order('created_at', { ascending: false }).limit(5),
-      supabase.from('conversations').select('*', { count: 'exact', head: true }).or(`participant_1.eq.${profile.id},participant_2.eq.${profile.id}`),
-      supabase.from('cars').select('*', { count: 'exact', head: true }).eq('owner_id', profile.id),
+    const [
+      { data: bookings },
+      { data: cars },
+      { count: chatCount },
+    ] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select('*, repairer:profiles!bookings_repairer_id_fkey(id, full_name, avatar_url, city)')
+        .eq('customer_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase
+        .from('cars')
+        .select('id, make, model, year, images')
+        .eq('owner_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(6),
+      supabase
+        .from('conversations')
+        .select('*', { count: 'exact', head: true })
+        .or(`participant_1.eq.${profile.id},participant_2.eq.${profile.id}`),
     ])
+
+    // Unique repairers from past bookings for "Rebook" 
+    const seenRepairers = new Map<string, any>()
+    for (const b of (bookings ?? []) as any[]) {
+      if (b.repairer && !seenRepairers.has(b.repairer_id)) {
+        seenRepairers.set(b.repairer_id, b.repairer)
+      }
+    }
+    const previousRepairers = Array.from(seenRepairers.values()).slice(0, 3)
+    const cityParam = profile.city ? `?city=${encodeURIComponent(profile.city)}` : ''
 
     return (
       <div className="animate-fade-in">
+        {/* Welcome */}
         <div className="page-header">
-          <h1 className="page-title">Welcome back, {profile.full_name?.split(' ')[0]} 👋</h1>
-          <p className="page-subtitle">Here&apos;s a look at your activity.</p>
+          <h1 className="page-title">Welcome back, {profile.full_name?.split(' ')[0] ?? 'there'} 👋</h1>
+          <p className="page-subtitle">What does your car need today?</p>
         </div>
 
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-card__icon" style={{ background: 'rgba(249,115,22,0.12)' }}>
-              <span style={{ color: 'var(--color-accent)', fontSize: '1.25rem' }}>📦</span>
+        {/* ── 1. Quick Actions ───────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+          <Link href={`/repairers${cityParam}`} className="card card--hover" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none', textAlign: 'center' }}>
+            <span style={{ fontSize: '2rem' }}>📍</span>
+            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Find Car Repairs Near Me</span>
+          </Link>
+          <Link href="/repairers" className="card card--hover" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none', textAlign: 'center' }}>
+            <span style={{ fontSize: '2rem' }}>📅</span>
+            <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Book Appointment</span>
+          </Link>
+          {previousRepairers.length > 0 ? (
+            <Link href={`/repairers/${previousRepairers[0].id}#book`} className="card card--hover" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none', textAlign: 'center' }}>
+              <span style={{ fontSize: '2rem' }}>🔄</span>
+              <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Rebook Previous Mechanic</span>
+            </Link>
+          ) : (
+            <div className="card" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', textAlign: 'center', opacity: 0.5 }}>
+              <span style={{ fontSize: '2rem' }}>🔄</span>
+              <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>Rebook Previous Mechanic</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-400)' }}>No history yet</span>
             </div>
-            <div className="stat-card__label">Total Orders</div>
-            <div className="stat-card__value">{orders?.length ?? 0}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__icon" style={{ background: 'rgba(37,99,235,0.12)' }}>
-              <span style={{ color: 'var(--color-primary-light)', fontSize: '1.25rem' }}>💬</span>
-            </div>
-            <div className="stat-card__label">Conversations</div>
-            <div className="stat-card__value">{chatCount ?? 0}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__icon" style={{ background: 'rgba(22,163,74,0.12)' }}>
-              <span style={{ color: '#16a34a', fontSize: '1.25rem' }}>🚗</span>
-            </div>
-            <div className="stat-card__label">My Cars</div>
-            <div className="stat-card__value">{carCount ?? 0}</div>
-          </div>
+          )}
+          <Link href="/repairers?available=1" className="card card--hover" style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none', textAlign: 'center', border: '2px solid var(--color-danger)' }}>
+            <span style={{ fontSize: '2rem' }}>🚨</span>
+            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-danger)' }}>Emergency Repair / Breakdown</span>
+          </Link>
         </div>
 
+        {/* ── 2. Service Categories ───────────────────── */}
         <div className="section-header">
-          <h2 className="section-title">Recent Orders</h2>
-          <Link href="/orders" className="btn btn--ghost btn--sm">View all</Link>
+          <h2 className="section-title">What do you need?</h2>
         </div>
-        {orders && orders.length > 0 ? (
-          <div className="card">
-            <div className="table-wrapper">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(orders as any[]).map((o) => (
-                    <tr key={o.id}>
-                      <td>{o.products?.name ?? '—'}</td>
-                      <td><Badge variant={statusVariant[o.status as OrderStatus]}>{o.status}</Badge></td>
-                      <td style={{ color: 'var(--color-text-300)' }}>{formatRelativeTime(o.created_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
+          {SERVICE_CATEGORIES.map((cat) => (
+            <Link
+              key={cat.spec}
+              href={`/repairers?specialization=${encodeURIComponent(cat.spec)}`}
+              className="card card--hover"
+              style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-2)', textDecoration: 'none', textAlign: 'center' }}
+            >
+              <span style={{ fontSize: '1.75rem' }}>{cat.icon}</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, lineHeight: 1.3 }}>{cat.label}</span>
+            </Link>
+          ))}
+        </div>
+
+        {/* ── 3. Symptom Picker ───────────────────────── */}
+        <SymptomPicker symptoms={SYMPTOMS} city={profile.city ?? ''} />
+
+        {/* ── 4. Recent Bookings ──────────────────────── */}
+        <div className="section-header" style={{ marginTop: 'var(--space-8)' }}>
+          <h2 className="section-title">Recent Bookings</h2>
+          <Link href="/bookings" className="btn btn--ghost btn--sm">View all</Link>
+        </div>
+        {bookings && bookings.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
+            {(bookings as any[]).slice(0, 3).map((b) => (
+              <div key={b.id} className="card" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+                <Avatar src={b.repairer?.avatar_url} name={b.repairer?.full_name} size="md" />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{b.repairer?.full_name ?? '—'}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>{formatDate(b.scheduled_date)}</div>
+                </div>
+                <Badge variant={bookingVariant[b.status as BookingStatus]}>{b.status}</Badge>
+                <Link href={`/repairers/${b.repairer_id}#book`} className="btn btn--ghost btn--sm">Book Again</Link>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <div className="empty-state__title">No orders yet</div>
-            <div className="empty-state__desc">Head to the marketplace when you need a part.</div>
-            <Link href="/marketplace" className="btn btn--primary btn--md">Go to Marketplace</Link>
+          <div className="empty-state" style={{ marginBottom: 'var(--space-8)' }}>
+            <div className="empty-state__title">No bookings yet</div>
+            <div className="empty-state__desc">Find a repairer and send a booking request.</div>
+            <Link href="/repairers" className="btn btn--primary btn--sm" style={{ marginTop: 12 }}>Find Repairers</Link>
           </div>
+        )}
+
+        {/* ── 5. My Cars ──────────────────────────────── */}
+        <div className="section-header">
+          <h2 className="section-title">My Cars</h2>
+          <Link href="/dashboard/cars" className="btn btn--ghost btn--sm">Manage</Link>
+        </div>
+        {cars && cars.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px,1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-8)' }}>
+            {(cars as any[]).map((car) => (
+              <Link key={car.id} href={`/dashboard/cars/${car.id}/edit`} className="card card--hover" style={{ overflow: 'hidden', textDecoration: 'none' }}>
+                <div style={{ height: 90, background: 'var(--color-surface-700)', overflow: 'hidden' }}>
+                  {car.images?.[0]
+                    ? <img src={car.images[0]} alt={car.make} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>🚗</div>
+                  }
+                </div>
+                <div style={{ padding: 'var(--space-3)' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{car.year} {car.make}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>{car.model}</div>
+                </div>
+              </Link>
+            ))}
+            <Link href="/dashboard/cars/new" className="card card--hover" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 130, textDecoration: 'none', flexDirection: 'column', gap: 8, color: 'var(--color-text-300)' }}>
+              <span style={{ fontSize: '1.75rem' }}>＋</span>
+              <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Add Car</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="empty-state" style={{ marginBottom: 'var(--space-8)' }}>
+            <div className="empty-state__title">No cars added</div>
+            <Link href="/dashboard/cars/new" className="btn btn--primary btn--sm" style={{ marginTop: 12 }}>Add your first car</Link>
+          </div>
+        )}
+
+        {/* ── 6. Rebook Previous Repairers ────────────── */}
+        {previousRepairers.length > 0 && (
+          <>
+            <div className="section-header">
+              <h2 className="section-title">Previous Mechanics</h2>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 'var(--space-8)' }}>
+              {previousRepairers.map((r) => (
+                <div key={r.id} className="card" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', minWidth: 220 }}>
+                  <Avatar src={r.avatar_url} name={r.full_name} size="md" />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{r.full_name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-300)' }}>{r.city ?? ''}</div>
+                  </div>
+                  <Link href={`/repairers/${r.id}#book`} className="btn btn--primary btn--sm">Book Again</Link>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     )

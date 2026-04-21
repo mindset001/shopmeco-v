@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
 import Sidebar from '@/components/nav/Sidebar'
+import NotificationPermissionRequest from '@/components/NotificationPermissionRequest'
 
 export default async function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default async function DashboardLayout({
 
   return (
     <>
+      <NotificationPermissionRequest />
       <Navbar profile={profile} />
       <div className="dashboard-layout">
         <Sidebar role={profile.role} />
