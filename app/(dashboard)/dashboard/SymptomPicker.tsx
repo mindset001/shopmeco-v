@@ -1,12 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 
 interface Props {
-  symptoms: string[]
+  symptoms?: string[]
   city: string
 }
+
+// Default symptoms if not provided
+const DEFAULT_SYMPTOMS = [
+  'Car not starting',
+  'Car shaking / vibrating',
+  'Warning light on dashboard',
+  'Strange noise',
+  'Burning smell',
+  'Poor fuel consumption',
+  'Overheating',
+  'Gear problems',
+]
 
 const SYMPTOM_CATEGORY_MAP: Record<string, string> = {
   'Car not starting': 'Electrical',
@@ -19,10 +32,39 @@ const SYMPTOM_CATEGORY_MAP: Record<string, string> = {
   'Gear problems': 'Transmission',
 }
 
-export default function SymptomPicker({ symptoms, city }: Props) {
+export default function SymptomPicker({ symptoms: propSymptoms, city }: Props) {
   const router = useRouter()
   const [selected, setSelected] = useState<string[]>([])
   const [text, setText] = useState('')
+  const [symptoms, setSymptoms] = useState<string[]>(propSymptoms || DEFAULT_SYMPTOMS)
+  const [loading, setLoading] = useState(!propSymptoms)
+
+  // Fetch symptoms from database if not provided via props
+  useEffect(() => {
+    if (propSymptoms) return
+
+    async function loadSymptoms() {
+      try {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('symptoms')
+          .select('name')
+          .limit(15)
+
+        if (data && data.length > 0) {
+          setSymptoms(data.map((s: any) => s.name))
+        } else {
+          setSymptoms(DEFAULT_SYMPTOMS)
+        }
+      } catch {
+        setSymptoms(DEFAULT_SYMPTOMS)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadSymptoms()
+  }, [propSymptoms])
 
   function toggle(s: string) {
     setSelected((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s])
@@ -31,13 +73,23 @@ export default function SymptomPicker({ symptoms, city }: Props) {
   function findMechanics() {
     const params = new URLSearchParams()
     if (city) params.set('city', city)
-    // Pick the most specific category from selected symptoms
-    const categories = selected.map((s) => SYMPTOM_CATEGORY_MAP[s]).filter(Boolean)
-    const primary = categories[0]
-    if (primary) params.set('specialization', primary)
+    
+    // Include multiple categories if multiple symptoms map to different specializations
+    const categories = [...new Set(selected.map((s) => SYMPTOM_CATEGORY_MAP[s]).filter(Boolean))]
+    if (categories.length > 0) params.set('specialization', categories.join(','))
+    
     if (selected.length) params.set('symptoms', selected.join(','))
     if (text.trim()) params.set('q', text.trim())
+    
     router.push(`/repairers?${params.toString()}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="card" style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-6)' }}>
+        <div style={{ color: 'var(--color-text-400)' }}>Loading symptoms…</div>
+      </div>
+    )
   }
 
   return (
@@ -65,6 +117,7 @@ export default function SymptomPicker({ symptoms, city }: Props) {
                 cursor: 'pointer',
                 transition: 'all 0.15s',
               }}
+              title={SYMPTOM_CATEGORY_MAP[s] || undefined}
             >
               {s}
             </button>
@@ -85,6 +138,10 @@ export default function SymptomPicker({ symptoms, city }: Props) {
         className="btn btn--primary btn--md"
         onClick={findMechanics}
         disabled={selected.length === 0 && !text.trim()}
+        style={{
+          opacity: selected.length === 0 && !text.trim() ? 0.5 : 1,
+          cursor: selected.length === 0 && !text.trim() ? 'not-allowed' : 'pointer',
+        }}
       >
         Find Mechanics for My Problem
       </button>

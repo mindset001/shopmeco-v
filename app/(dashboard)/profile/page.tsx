@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -15,6 +15,13 @@ import ServicesCatalog from './ServicesCatalog'
 import { NIGERIA_STATES, NIGERIA_CITIES } from '@/lib/data/nigeria-locations'
 import { BadgeCheck, Star } from 'lucide-react'
 
+// Phone validation for Nigerian numbers
+const validatePhone = (phone: string): boolean => {
+  if (!phone) return true // optional field
+  const nigerianPhoneRegex = /^(\+234|0)[789]\d{9}$/
+  return nigerianPhoneRegex.test(phone.replace(/\s/g, ''))
+}
+
 const LocationPicker = dynamic(() => import('@/components/ui/LocationPicker'), { ssr: false, loading: () => <div style={{ height: 300, background: 'var(--color-surface-800)', borderRadius: 'var(--radius-lg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-400)' }}>Loading map…</div> })
 
 export default function ProfilePage() {
@@ -23,6 +30,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
   const [savingPw, setSavingPw] = useState(false)
@@ -105,9 +113,45 @@ export default function ProfilePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Track unsaved changes and warn on navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
+  // Mark as unsaved when any field changes
+  const markUnsaved = useCallback(() => {
+    setHasUnsavedChanges(true)
+  }, [])
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!profile) return
+
+    // Validation
+    if (form.phone && !validatePhone(form.phone)) {
+      toast('Please enter a valid Nigerian phone number (e.g., 08012345678 or +2348012345678)', 'error')
+      return
+    }
+
+    if (profile.role === 'repairer') {
+      if (!workshopName.trim()) {
+        toast('Workshop name is required for repairers', 'error')
+        return
+      }
+      if (!lat || !lng) {
+        toast('Please select a location on the map', 'error')
+        return
+      }
+    }
+
     setSaving(true)
 
     const supabase = createClient()
@@ -124,7 +168,7 @@ export default function ProfilePage() {
     }
 
     if (profile.role === 'repairer') {
-      await supabase.from('repairer_details').upsert({
+      const { error: repairerError } = await supabase.from('repairer_details').upsert({
         id: profile.id,
         workshop_name: workshopName,
         job_title: jobTitle || null,
@@ -139,9 +183,15 @@ export default function ProfilePage() {
         is_available: isAvailable,
         workshop_images: workshopImages,
       })
+      if (repairerError) {
+        toast('Failed to save repairer details: ' + repairerError.message, 'error')
+        setSaving(false)
+        return
+      }
     }
 
     setSaving(false)
+    setHasUnsavedChanges(false)
     toast('Changes saved successfully', 'success')
     setTimeout(() => router.push('/dashboard'), 900)
   }
@@ -258,13 +308,14 @@ export default function ProfilePage() {
           <Input
             label="Full name"
             value={form.full_name}
-            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            onChange={(e) => { setForm({ ...form, full_name: e.target.value }); markUnsaved() }}
           />
           <Input
             label="Phone"
             type="tel"
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => { setForm({ ...form, phone: e.target.value }); markUnsaved() }}
+            placeholder="+234 or 0..."
           />
           <div className="input-group">
             <label className="input-label">Bio</label>
@@ -272,7 +323,7 @@ export default function ProfilePage() {
               className="input"
               rows={4}
               value={form.bio}
-              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              onChange={(e) => { setForm({ ...form, bio: e.target.value }); markUnsaved() }}
               placeholder="Tell others about yourself…"
               style={{ resize: 'vertical' }}
             />
@@ -280,7 +331,7 @@ export default function ProfilePage() {
           <Input
             label="Address"
             value={form.address}
-            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            onChange={(e) => { setForm({ ...form, address: e.target.value }); markUnsaved() }}
           />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
             <div className="input-group">
@@ -288,7 +339,7 @@ export default function ProfilePage() {
               <select
                 className="input"
                 value={form.state}
-                onChange={(e) => setForm({ ...form, state: e.target.value, city: '' })}
+                onChange={(e) => { setForm({ ...form, state: e.target.value, city: '' }); markUnsaved() }}
                 required
               >
                 <option value="">Select state…</option>
@@ -302,7 +353,7 @@ export default function ProfilePage() {
               <select
                 className="input"
                 value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                onChange={(e) => { setForm({ ...form, city: e.target.value }); markUnsaved() }}
                 disabled={!form.state}
                 required={!!form.state}
               >
@@ -319,7 +370,7 @@ export default function ProfilePage() {
             <LocationPicker
               lat={lat}
               lng={lng}
-              onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng) }}
+              onChange={(newLat, newLng) => { setLat(newLat); setLng(newLng); markUnsaved() }}
             />
           </div>
 
@@ -351,7 +402,8 @@ export default function ProfilePage() {
               <Input
                 label="Workshop / Business Name"
                 value={workshopName}
-                onChange={(e) => setWorkshopName(e.target.value)}
+                onChange={(e) => { setWorkshopName(e.target.value); markUnsaved() }}
+                required
               />
 
               {/* ── Job title ── */}
@@ -360,7 +412,7 @@ export default function ProfilePage() {
                 <select
                   className="input"
                   value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
+                  onChange={(e) => { setJobTitle(e.target.value); markUnsaved() }}
                 >
                   <option value="">Select your primary role…</option>
                   {['Mechanic', 'Gear Master / Transmission Specialist', 'Auto Electrician', 'AC Technician', 'Panel Beater', 'Auto Painter', 'Tyre Technician', 'Diagnostics Specialist', 'General Technician'].map((t) => (
@@ -375,14 +427,14 @@ export default function ProfilePage() {
                   label="Base / Fixed Service Price (₦)"
                   type="number"
                   value={fixedPrice}
-                  onChange={(e) => setFixedPrice(e.target.value)}
+                  onChange={(e) => { setFixedPrice(e.target.value); markUnsaved() }}
                   placeholder="e.g. 5000"
                 />
                 <Input
                   label="Inspection / Diagnostic Fee (₦, optional)"
                   type="number"
                   value={inspectionFee}
-                  onChange={(e) => setInspectionFee(e.target.value)}
+                  onChange={(e) => { setInspectionFee(e.target.value); markUnsaved() }}
                   placeholder="e.g. 2000"
                 />
               </div>
@@ -400,7 +452,10 @@ export default function ProfilePage() {
                       if ((e.key === 'Enter' || e.key === ',') && vehicleBrandInput.trim()) {
                         e.preventDefault()
                         const b = vehicleBrandInput.trim().replace(/,$/, '')
-                        if (b && !vehicleBrands.includes(b)) setVehicleBrands([...vehicleBrands, b])
+                        if (b && !vehicleBrands.includes(b)) {
+                          setVehicleBrands([...vehicleBrands, b])
+                          markUnsaved()
+                        }
                         setVehicleBrandInput('')
                       }
                     }}
@@ -411,7 +466,10 @@ export default function ProfilePage() {
                     className="btn btn--secondary btn--md"
                     onClick={() => {
                       const b = vehicleBrandInput.trim()
-                      if (b && !vehicleBrands.includes(b)) setVehicleBrands([...vehicleBrands, b])
+                      if (b && !vehicleBrands.includes(b)) {
+                        setVehicleBrands([...vehicleBrands, b])
+                        markUnsaved()
+                      }
                       setVehicleBrandInput('')
                     }}
                   >Add</button>
@@ -421,7 +479,7 @@ export default function ProfilePage() {
                     {vehicleBrands.map((b) => (
                       <span key={b} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '0.2rem 0.65rem', background: 'var(--color-surface-800)', border: '1px solid var(--color-border)', borderRadius: 999, fontSize: '0.82rem' }}>
                         {b}
-                        <button type="button" onClick={() => setVehicleBrands(vehicleBrands.filter((x) => x !== b))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-300)', padding: 0, lineHeight: 1 }}>×</button>
+                        <button type="button" onClick={() => { setVehicleBrands(vehicleBrands.filter((x) => x !== b)); markUnsaved() }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-300)', padding: 0, lineHeight: 1 }}>×</button>
                       </span>
                     ))}
                   </div>
@@ -437,7 +495,7 @@ export default function ProfilePage() {
                       <input
                         type="checkbox"
                         checked={serviceModes.includes(value)}
-                        onChange={(e) => setServiceModes(e.target.checked ? [...serviceModes, value] : serviceModes.filter((m) => m !== value))}
+                        onChange={(e) => { setServiceModes(e.target.checked ? [...serviceModes, value] : serviceModes.filter((m) => m !== value)); markUnsaved() }}
                         style={{ width: 16, height: 16, accentColor: 'var(--color-accent)' }}
                       />
                       {label}
@@ -447,7 +505,7 @@ export default function ProfilePage() {
               </div>
 
               {/* ── Services catalog ── */}
-              <ServicesCatalog selected={services} onChange={setServices} />
+              <ServicesCatalog selected={services} onChange={(newServices) => { setServices(newServices); markUnsaved() }} />
 
               {/* ── Availability ── */}
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-5)' }}>
@@ -458,7 +516,7 @@ export default function ProfilePage() {
                   type="checkbox"
                   id="available"
                   checked={isAvailable}
-                  onChange={(e) => setIsAvailable(e.target.checked)}
+                  onChange={(e) => { setIsAvailable(e.target.checked); markUnsaved() }}
                   style={{ width: 18, height: 18, accentColor: 'var(--color-accent)' }}
                 />
                 <label htmlFor="available" style={{ cursor: 'pointer', fontWeight: 600 }}>
@@ -473,7 +531,7 @@ export default function ProfilePage() {
                     return (
                       <button
                         key={day} type="button"
-                        onClick={() => setAvailableDays(on ? availableDays.filter((d) => d !== day) : [...availableDays, day])}
+                        onClick={() => { setAvailableDays(on ? availableDays.filter((d) => d !== day) : [...availableDays, day]); markUnsaved() }}
                         style={{
                           padding: '0.3rem 0.75rem', borderRadius: 999,
                           border: `1.5px solid ${on ? 'var(--color-accent)' : 'var(--color-border)'}`,
@@ -489,11 +547,11 @@ export default function ProfilePage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
                 <div className="input-group">
                   <label className="input-label">Open From</label>
-                  <input type="time" className="input" value={availableFrom} onChange={(e) => setAvailableFrom(e.target.value)} />
+                  <input type="time" className="input" value={availableFrom} onChange={(e) => { setAvailableFrom(e.target.value); markUnsaved() }} />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Close At</label>
-                  <input type="time" className="input" value={availableTo} onChange={(e) => setAvailableTo(e.target.value)} />
+                  <input type="time" className="input" value={availableTo} onChange={(e) => { setAvailableTo(e.target.value); markUnsaved() }} />
                 </div>
               </div>
 
@@ -504,7 +562,7 @@ export default function ProfilePage() {
                   userId={profile.id}
                   maxImages={6}
                   uploadedUrls={workshopImages}
-                  onUrlsChange={setWorkshopImages}
+                  onUrlsChange={(urls) => { setWorkshopImages(urls); markUnsaved() }}
                   label="Workshop Photos"
                 />
               )}
@@ -525,7 +583,7 @@ export default function ProfilePage() {
                   userId={profile.id}
                   maxImages={5}
                   uploadedUrls={shopImages}
-                  onUrlsChange={setShopImages}
+                  onUrlsChange={(urls) => { setShopImages(urls); markUnsaved() }}
                   label="Shop Photos"
                 />
               )}

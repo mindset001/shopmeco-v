@@ -1,60 +1,144 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { ChevronDown, ChevronRight, Search, X, Plus } from 'lucide-react'
 
-const CATALOG: { category: string; items: string[] }[] = [
+interface ServiceItem {
+  name: string
+  description?: string
+}
+
+interface CatalogCategory {
+  category: string
+  items: ServiceItem[]
+}
+
+const CATALOG: CatalogCategory[] = [
   {
     category: 'Engine & Performance',
-    items: ['Engine Diagnosis', 'Engine Repair', 'Engine Overhaul', 'Overheating Fix', 'Oil Leak Repair', 'Timing Belt Replacement', 'Head Gasket Repair'],
+    items: [
+      { name: 'Engine Diagnosis', description: 'Complete engine diagnostic check' },
+      { name: 'Engine Repair', description: 'Engine repair and restoration' },
+      { name: 'Engine Overhaul', description: 'Full engine overhaul service' },
+      { name: 'Overheating Fix', description: 'Fix engine overheating issues' },
+      { name: 'Oil Leak Repair', description: 'Repair oil leaks' },
+      { name: 'Timing Belt Replacement', description: 'Replace timing belt' },
+      { name: 'Head Gasket Repair', description: 'Head gasket replacement' },
+    ],
   },
   {
     category: 'Electrical & Diagnostics',
-    items: ['ECU Diagnostics', 'ECU Programming', 'Check Engine Light Fix', 'Battery Replacement', 'Alternator Repair', 'Starter Repair', 'Wiring Repair'],
+    items: [
+      { name: 'ECU Diagnostics', description: 'Computer diagnostics' },
+      { name: 'ECU Programming', description: 'Engine control unit programming' },
+      { name: 'Check Engine Light Fix', description: 'Diagnose and fix warning lights' },
+      { name: 'Battery Replacement', description: 'Replace car battery' },
+      { name: 'Alternator Repair', description: 'Alternator repair and replacement' },
+      { name: 'Starter Repair', description: 'Starter motor repair' },
+      { name: 'Wiring Repair', description: 'Electrical wiring repair' },
+    ],
   },
   {
     category: 'Transmission',
-    items: ['Transmission Repair', 'Gearbox Service', 'Gear Shifting Issues', 'Clutch Repair', 'Automatic Transmission Service'],
+    items: [
+      { name: 'Transmission Repair', description: 'Transmission repair and service' },
+      { name: 'Gearbox Service', description: 'Gearbox servicing and maintenance' },
+      { name: 'Gear Shifting Issues', description: 'Fix gear shifting problems' },
+      { name: 'Clutch Repair', description: 'Clutch replacement and repair' },
+      { name: 'Automatic Transmission Service', description: 'Automatic transmission servicing' },
+    ],
   },
   {
     category: 'Brakes',
-    items: ['Brake Pad Replacement', 'Brake Disc Replacement', 'Brake Repair', 'ABS Repair'],
+    items: [
+      { name: 'Brake Pad Replacement', description: 'Replace brake pads' },
+      { name: 'Brake Disc Replacement', description: 'Replace brake discs' },
+      { name: 'Brake Repair', description: 'General brake system repair' },
+      { name: 'ABS Repair', description: 'Anti-lock braking system repair' },
+    ],
   },
   {
     category: 'Suspension & Steering',
-    items: ['Wheel Alignment', 'Wheel Balancing', 'Shock Absorber Replacement', 'Suspension Repair', 'Steering Rack Repair'],
+    items: [
+      { name: 'Wheel Alignment', description: 'Wheel alignment service' },
+      { name: 'Wheel Balancing', description: 'Wheel balancing service' },
+      { name: 'Shock Absorber Replacement', description: 'Replace shock absorbers' },
+      { name: 'Suspension Repair', description: 'Suspension system repair' },
+      { name: 'Steering Rack Repair', description: 'Steering rack repair' },
+    ],
   },
   {
     category: 'AC & Cooling',
-    items: ['AC Repair', 'AC Gas Refill', 'Compressor Repair', 'Radiator Repair', 'Cooling Fan Repair'],
+    items: [
+      { name: 'AC Repair', description: 'Air conditioning repair' },
+      { name: 'AC Gas Refill', description: 'AC refrigerant refill' },
+      { name: 'Compressor Repair', description: 'AC compressor repair' },
+      { name: 'Radiator Repair', description: 'Radiator repair and replacement' },
+      { name: 'Cooling Fan Repair', description: 'Cooling system fan repair' },
+    ],
   },
   {
     category: 'Fuel System',
-    items: ['Fuel Pump Repair', 'Injector Cleaning', 'Injector Replacement', 'Fuel Tank Cleaning', 'Fuel Line Repair'],
+    items: [
+      { name: 'Fuel Pump Repair', description: 'Fuel pump repair' },
+      { name: 'Injector Cleaning', description: 'Fuel injector cleaning' },
+      { name: 'Injector Replacement', description: 'Replace fuel injectors' },
+      { name: 'Fuel Tank Cleaning', description: 'Clean fuel tank' },
+      { name: 'Fuel Line Repair', description: 'Repair fuel lines' },
+    ],
   },
   {
     category: 'Exhaust System',
-    items: ['Exhaust Repair', 'Silencer Replacement', 'Smoke Diagnosis'],
+    items: [
+      { name: 'Exhaust Repair', description: 'Exhaust system repair' },
+      { name: 'Silencer Replacement', description: 'Replace exhaust silencer' },
+      { name: 'Smoke Diagnosis', description: 'Diagnose smoke issues' },
+    ],
   },
   {
     category: 'General Maintenance',
-    items: ['Oil Change', 'Full Service / Tune-up', 'Spark Plug Replacement', 'Filter Replacement', 'Vehicle Inspection'],
+    items: [
+      { name: 'Oil Change', description: 'Oil and filter change' },
+      { name: 'Full Service / Tune-up', description: 'Complete vehicle service' },
+      { name: 'Spark Plug Replacement', description: 'Replace spark plugs' },
+      { name: 'Filter Replacement', description: 'Replace engine filters' },
+      { name: 'Vehicle Inspection', description: 'Vehicle inspection and check' },
+    ],
   },
   {
     category: 'Tyres & Wheels',
-    items: ['Tyre Replacement', 'Tyre Repair (Puncture)', 'Rim Repair'],
+    items: [
+      { name: 'Tyre Replacement', description: 'Replace tires' },
+      { name: 'Tyre Repair (Puncture)', description: 'Puncture repair' },
+      { name: 'Rim Repair', description: 'Wheel rim repair' },
+    ],
   },
   {
     category: 'Body Work',
-    items: ['Panel Beating', 'Painting', 'Dent Removal', 'Bumper Repair'],
+    items: [
+      { name: 'Panel Beating', description: 'Panel beating and dent repair' },
+      { name: 'Painting', description: 'Vehicle painting service' },
+      { name: 'Dent Removal', description: 'Remove dents and dings' },
+      { name: 'Bumper Repair', description: 'Bumper repair and replacement' },
+    ],
   },
   {
     category: 'Accessories & Installations',
-    items: ['Tracker Installation', 'Car Alarm Installation', 'Stereo Installation', 'Lighting Upgrade'],
+    items: [
+      { name: 'Tracker Installation', description: 'Install GPS tracker' },
+      { name: 'Car Alarm Installation', description: 'Install car alarm' },
+      { name: 'Stereo Installation', description: 'Install car stereo' },
+      { name: 'Lighting Upgrade', description: 'Upgrade lighting system' },
+    ],
   },
   {
     category: 'Emergency Services',
-    items: ['Breakdown Assistance', 'Car Not Starting', 'On-site Repair', 'Towing'],
+    items: [
+      { name: 'Breakdown Assistance', description: 'Roadside assistance' },
+      { name: 'Car Not Starting', description: 'Fix car starting issues' },
+      { name: 'On-site Repair', description: 'Repair at customer location' },
+      { name: 'Towing', description: 'Towing service' },
+    ],
   },
 ]
 
@@ -68,6 +152,29 @@ interface Props {
 export default function ServicesCatalog({ selected, onChange }: Props) {
   const [query, setQuery] = useState('')
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [customService, setCustomService] = useState('')
+  const [showCustomInput, setShowCustomInput] = useState(false)
+
+  // Load expanded state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('services-expanded')
+    if (stored) {
+      try {
+        setExpanded(JSON.parse(stored))
+      } catch {
+        // ignore parse errors
+      }
+    }
+  }, [])
+
+  // Save expanded state to localStorage
+  const updateExpanded = (updater: (prev: Record<string, boolean>) => Record<string, boolean>) => {
+    setExpanded((prev) => {
+      const newExpanded = updater(prev)
+      localStorage.setItem('services-expanded', JSON.stringify(newExpanded))
+      return newExpanded
+    })
+  }
 
   function toggle(item: string) {
     if (selected.includes(item)) {
@@ -77,8 +184,17 @@ export default function ServicesCatalog({ selected, onChange }: Props) {
     }
   }
 
-  function toggleCategory(cat: string) {
-    setExpanded((prev) => ({ ...prev, [cat]: !prev[cat] }))
+  function toggleCategory(cat: string): void {
+    updateExpanded((prev) => ({ ...prev, [cat]: !prev[cat] }))
+  }
+
+  function addCustomService() {
+    const trimmed = customService.trim()
+    if (trimmed && !selected.includes(trimmed) && selected.length < MAX_ITEMS) {
+      onChange([...selected, trimmed])
+      setCustomService('')
+      setShowCustomInput(false)
+    }
   }
 
   const filtered = useMemo(() => {
@@ -86,7 +202,7 @@ export default function ServicesCatalog({ selected, onChange }: Props) {
     const q = query.toLowerCase()
     return CATALOG.map((c) => ({
       ...c,
-      items: c.items.filter((i) => i.toLowerCase().includes(q)),
+      items: c.items.filter((i) => i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q)),
     })).filter((c) => c.items.length > 0 || c.category.toLowerCase().includes(q))
   }, [query])
 
@@ -155,9 +271,9 @@ export default function ServicesCatalog({ selected, onChange }: Props) {
       )}
 
       {/* Catalog */}
-      <div style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', marginBottom: 'var(--space-3)' }}>
         {displayCatalog.map((cat, ci) => {
-          const allInCat = cat.items.filter((i) => selected.includes(i)).length
+          const allInCat = cat.items.filter((i) => selected.includes(i.name)).length
           return (
             <div key={cat.category}>
               {ci > 0 && <hr style={{ margin: 0, borderColor: 'var(--color-border)' }} />}
@@ -189,14 +305,15 @@ export default function ServicesCatalog({ selected, onChange }: Props) {
                   background: 'var(--color-surface-800)',
                 }}>
                   {cat.items.map((item) => {
-                    const checked = selected.includes(item)
+                    const checked = selected.includes(item.name)
                     const disabled = !checked && atMax
                     return (
                       <button
-                        key={item}
+                        key={item.name}
                         type="button"
                         disabled={disabled}
-                        onClick={() => toggle(item)}
+                        onClick={() => toggle(item.name)}
+                        title={item.description}
                         style={{
                           padding: '0.3rem 0.75rem',
                           borderRadius: 999,
@@ -210,7 +327,7 @@ export default function ServicesCatalog({ selected, onChange }: Props) {
                           transition: 'all 0.12s',
                         }}
                       >
-                        {item}
+                        {item.name}
                       </button>
                     )
                   })}
@@ -220,6 +337,62 @@ export default function ServicesCatalog({ selected, onChange }: Props) {
           )
         })}
       </div>
+
+      {/* Custom Service Input */}
+      {!atMax && (
+        <>
+          {!showCustomInput ? (
+            <button
+              type="button"
+              onClick={() => setShowCustomInput(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '0.5rem 0.75rem',
+                background: 'transparent',
+                border: '1.5px dashed var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--color-text-300)',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+              }}
+            >
+              <Plus size={14} />
+              Add Custom Service
+            </button>
+          ) : (
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <input
+                type="text"
+                className="input"
+                placeholder="e.g. Custom Modification"
+                value={customService}
+                onChange={(e) => setCustomService(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') addCustomService()
+                  if (e.key === 'Escape') { setShowCustomInput(false); setCustomService('') }
+                }}
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={addCustomService}
+                disabled={!customService.trim()}
+                className="btn btn--secondary btn--sm"
+              >
+                Add
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowCustomInput(false); setCustomService('') }}
+                className="btn btn--ghost btn--sm"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }

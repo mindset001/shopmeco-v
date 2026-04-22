@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils/helpers'
@@ -27,16 +28,16 @@ export default async function AdminBookingsPage({ searchParams }: PageProps) {
   let query = supabase
     .from('bookings')
     .select('*, repairer:profiles!bookings_repairer_id_fkey(full_name, city), customer:profiles!bookings_customer_id_fkey(full_name)', { count: 'exact' })
+  
   if (status) query = query.eq('status', status)
+  
+  // Server-side search using OR conditions on joined fields
+  if (q) {
+    const searchTerm = `%${q}%`
+    query = query.or(`customer.full_name.ilike.${searchTerm},repairer.full_name.ilike.${searchTerm}`)
+  }
+  
   const { data: bookings, count } = await query.order('scheduled_date', { ascending: false }).range(from, to)
-
-  // If q is set, filter in JS (names come from joined tables)
-  const filtered = q
-    ? (bookings ?? []).filter((b: any) =>
-        b.customer?.full_name?.toLowerCase().includes(q.toLowerCase()) ||
-        b.repairer?.full_name?.toLowerCase().includes(q.toLowerCase()),
-      )
-    : (bookings ?? [])
 
   const baseParams = new URLSearchParams()
   if (q) baseParams.set('q', q)
@@ -81,10 +82,11 @@ export default async function AdminBookingsPage({ searchParams }: PageProps) {
                 <th>Description</th>
                 <th>Status</th>
                 <th>Created</th>
+                <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((b: any) => (
+              {(bookings ?? []).map((b: any) => (
                 <tr key={b.id}>
                   <td style={{ fontWeight: 600 }}>{b.customer?.full_name ?? '—'}</td>
                   <td style={{ color: 'var(--color-text-300)' }}>{b.repairer?.full_name ?? '—'}</td>
@@ -95,10 +97,15 @@ export default async function AdminBookingsPage({ searchParams }: PageProps) {
                   </td>
                   <td><Badge variant={statusVariant[b.status as BookingStatus]}>{b.status}</Badge></td>
                   <td style={{ color: 'var(--color-text-300)' }}>{formatDate(b.created_at)}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <Link href={`/admin/bookings/${b.id}`} className="btn btn--sm btn--ghost">
+                      View
+                    </Link>
+                  </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--color-text-400)', padding: '2rem' }}>No bookings found.</td></tr>
+              {(bookings ?? []).length === 0 && (
+                <tr><td colSpan={8} style={{ textAlign: 'center', color: 'var(--color-text-400)', padding: '2rem' }}>No bookings found.</td></tr>
               )}
             </tbody>
           </table>
