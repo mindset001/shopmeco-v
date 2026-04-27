@@ -61,7 +61,6 @@ export default function ImageUploadGrid({
         }
 
         const { error } = await supabase.storage.from(bucket).upload(path, item.file, {
-          cacheControl: '0', // Don't cache to ensure fresh uploads
           upsert: false,
         })
 

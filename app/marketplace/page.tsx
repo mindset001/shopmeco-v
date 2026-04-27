@@ -7,34 +7,40 @@ import { getCurrentProfile } from '@/lib/utils/profile'
 import MarketplaceFilters from './MarketplaceFilters'
 
 interface PageProps {
-  searchParams: Promise<{ category?: string; brand?: string; q?: string }>
+  searchParams: Promise<{ category?: string; brand?: string; q?: string; location?: string; model?: string; condition?: string }>
 }
 
 export default async function MarketplacePage({ searchParams }: PageProps) {
-  const { category, brand, q } = await searchParams
+  const { category, brand, q, location, model, condition } = await searchParams
   const profile = await getCurrentProfile()
   const supabase = await createClient()
 
   let query = supabase
     .from('products')
-    .select('*, profiles(id, full_name, city)')
+    .select('*, profiles!inner(id, full_name, city)')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
   if (category) query = query.eq('category', category)
   if (brand) query = query.eq('brand', brand)
   if (q) query = query.ilike('name', `%${q}%`)
+  if (location) {
+    query = query.or(`city.eq.${location},state.eq.${location},profiles.city.eq.${location}`)
+  }
+  if (condition) query = query.eq('condition', condition)
+  if (model) query = query.contains('compatible_cars', [model])
 
   const { data: products } = await query.limit(48)
 
-  // Unique categories and brands for filter
+  // Unique categories, brands, and locations for filter
   const { data: allProducts } = await supabase
     .from('products')
-    .select('category, brand')
+    .select('category, brand, city, profiles(city)')
     .eq('is_active', true)
 
   const categories = [...new Set((allProducts ?? []).map((p) => p.category).filter(Boolean))]
   const brands = [...new Set((allProducts ?? []).map((p) => p.brand).filter(Boolean))]
+  const locations = [...new Set((allProducts ?? []).map((p: any) => p.city || p.profiles?.city).filter(Boolean))].sort()
 
   return (
     <>
@@ -51,9 +57,8 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
           {/* Filters sidebar */}
           <div style={{ width: 220, flexShrink: 0 }}>
             <MarketplaceFilters
-              categories={categories as string[]}
-              brands={brands as string[]}
-              current={{ category, brand, q }}
+              locations={locations as string[]}
+              current={{ category, brand, q, location, model, condition }}
             />
           </div>
 
@@ -93,7 +98,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
                       </div>
                       <div className="product-card__footer">
                         <span style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>
-                          {p.profiles?.city ?? ''}
+                          {p.city || p.profiles?.city || ''}
                         </span>
                         <span className={`badge ${p.stock_quantity > 0 ? 'badge--success' : 'badge--danger'}`}>
                           {p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'Out of stock'}

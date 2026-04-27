@@ -11,6 +11,20 @@ import Navbar from '@/components/nav/Navbar'
 import ImageUploadGrid from '@/components/ui/ImageUploadGrid'
 import { CAR_MAKES, CAR_MODELS, CAR_YEARS } from '@/lib/data/cars'
 
+export const STANDARD_CATEGORIES = [
+  'Engine & Drivetrain',
+  'Brakes & Suspension',
+  'Body & Exterior',
+  'Interior & Accessories',
+  'Electrical & Lighting',
+  'Fluids & Chemicals',
+  'Wheels & Tires',
+  'Tools & Equipment',
+  'Other'
+]
+
+export const STANDARD_CONDITIONS = ['New', 'Used', 'Refurbished']
+
 export default function NewListingPage() {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
@@ -28,10 +42,13 @@ export default function NewListingPage() {
     price: '',
     stock_quantity: '1',
     category: '',
-    brand: '',
+    condition: 'New',
     carMake: '',
     carModel: '',
     carYear: '',
+    street: '',
+    city: '',
+    state: '',
   })
 
   function update(field: keyof typeof form) {
@@ -62,9 +79,13 @@ export default function NewListingPage() {
       price: parseFloat(form.price),
       stock_quantity: parseInt(form.stock_quantity),
       category: form.category || null,
-      brand: form.brand || null,
+      condition: form.condition,
+      brand: form.carMake || null,
       compatible_cars: compatibleCars,
       images: imageUrls,
+      street: form.street || null,
+      city: form.city || null,
+      state: form.state || null,
       is_active: true,
     })
 
@@ -89,17 +110,32 @@ export default function NewListingPage() {
             <label className="input-label">Description</label>
             <textarea className="input" rows={4} value={form.description} onChange={update('description')} placeholder="Describe the part, condition, etc." style={{ resize: 'vertical' }} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
             <Input label="Price (₦) *" type="number" min="0" step="0.01" value={form.price} onChange={update('price')} required />
             <Input label="Stock quantity *" type="number" min="1" value={form.stock_quantity} onChange={update('stock_quantity')} required />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
-            <Input label="Category" value={form.category} onChange={update('category')} placeholder="e.g. Engine, Brakes" />
-            <Input label="Brand" value={form.brand} onChange={update('brand')} placeholder="e.g. Bosch, Denso" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+            <div className="input-group">
+              <label className="input-label">Category</label>
+              <select className="input" value={form.category} onChange={update('category')}>
+                <option value="">Select category...</option>
+                {STANDARD_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group">
+              <label className="input-label">Condition</label>
+              <select className="input" value={form.condition} onChange={update('condition')}>
+                {STANDARD_CONDITIONS.map((cond) => (
+                  <option key={cond} value={cond}>{cond}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Car compatibility dropdowns */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
             <div className="input-group">
               <label className="input-label">Car Make</label>
               <select
@@ -142,6 +178,21 @@ export default function NewListingPage() {
               ))}
             </select>
           </div>
+
+          <h3 style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-4)', fontSize: '1.1rem' }}>
+            Location
+          </h3>
+          <div className="form-group">
+            <Input label="Street Address" value={form.street} onChange={update('street')} placeholder="e.g. 123 Main St" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
+            <Input label="City *" value={form.city} onChange={update('city')} required placeholder="e.g. Lagos" />
+            <Input label="State *" value={form.state} onChange={update('state')} required placeholder="e.g. Lagos State" />
+          </div>
+
+          <h3 style={{ marginTop: 'var(--space-6)', marginBottom: 'var(--space-4)', fontSize: '1.1rem' }}>
+            Photos
+          </h3>
 
           {userId && (
             <ImageUploadGrid

@@ -49,7 +49,7 @@ const navByRole: Record<
   ],
   parts_seller: [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/marketplace', label: 'My Listings', icon: ShoppingBag },
+    { href: '/dashboard/listings', label: 'My Listings', icon: ShoppingBag },
     { href: '/orders', label: 'Orders', icon: Package },
     { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/wallet', label: 'Wallet', icon: Wallet },

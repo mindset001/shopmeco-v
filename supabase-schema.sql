@@ -95,9 +95,13 @@ CREATE TABLE products (
   price            numeric NOT NULL,
   stock_quantity   int NOT NULL DEFAULT 0,
   category         text,
+  condition        text DEFAULT 'New',
   brand            text,
   compatible_cars  text[] DEFAULT '{}',
   images           text[] DEFAULT '{}',
+  street           text,
+  city             text,
+  state            text,
   is_active        boolean DEFAULT true,
   created_at       timestamptz NOT NULL DEFAULT now()
 );

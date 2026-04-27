@@ -185,7 +185,8 @@ img {
 }
 
 .section {
-  padding: var(--space-16) 0;
+  padding-top: var(--space-16);
+  padding-bottom: var(--space-16);
 }
 
 /* Animation Utilities */
@@ -917,14 +918,14 @@ form > .btn {
 
   .product-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3); }
   .role-grid { grid-template-columns: 1fr; }
-  .hero { grid-template-columns: 1fr; }
-  .hero__visual { display: none; }
+  .hero { display: flex; flex-direction: column-reverse; gap: var(--space-8); padding: var(--space-8) 0; }
+  .hero__visual { min-height: 360px; width: 100%; border-radius: var(--radius-xl); display: block; }
   .proof-banner { height: 200px; }
   .proof-banner__stats { gap: var(--space-6); flex-wrap: wrap; }
   .proof-banner__stat-value { font-size: 2rem; }
   .proof-banner__stat { flex: 1; min-width: 120px; }
-  .hero__ctas { flex-direction: column; }
-  .hero__ctas .btn { width: 100%; }
+  .hero__ctas { flex-direction: column; width: 100%; }
+  .hero__ctas .btn { width: 100%; justify-content: center; }
   .profile-hero { flex-direction: column; }
   .profile-hero__avatar { width: 100%; }
   .chat-sidebar { display: none; }
@@ -936,7 +937,7 @@ form > .btn {
   .form-label { font-size: 0.9rem; }
   
   /* Product page improvements */
-  [style*="grid-template-columns: '1fr 420px'"] {
+  [style*="grid-template-columns: 1fr 420px"] {
     grid-template-columns: 1fr !important;
   }
   
@@ -962,7 +963,7 @@ form > .btn {
 
 @media (max-width: 480px) {
   .container { padding: 0 var(--space-3); }
-  .section { padding: var(--space-8) 0; }
+  .section { padding-top: var(--space-8); padding-bottom: var(--space-8); }
   
   .navbar__inner { padding: var(--space-2); }
   .navbar__brand span { display: none; }
@@ -976,7 +977,7 @@ form > .btn {
   
   /* Booking form */
   .form-group { margin-bottom: var(--space-3); }
-  [style*="grid-template-columns: '1fr 1fr'"] {
+  [style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
   }
   
@@ -1004,9 +1005,7 @@ form > .btn {
   /* Marketplace search */
   .input[placeholder*="Search"] { width: 100%; }
   
-  /* Flex wrap improvements */
-  [style*="flex-wrap: wrap"] { flex-direction: column !important; }
-  [style*="display: flex"] { flex-direction: column !important; }
-  [style*="gap: '"] { gap: var(--space-2) !important; }
+  /* Layout tweaks for small screens */
+  .repairer-card__header { flex-direction: column; align-items: flex-start; }
 }
 

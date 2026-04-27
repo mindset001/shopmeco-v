@@ -88,9 +88,12 @@ export default async function DashboardPage() {
     return (
       <div className="animate-fade-in">
         {/* Welcome */}
-        <div className="page-header">
-          <h1 className="page-title">Welcome back, {profile.full_name?.split(' ')[0] ?? 'there'} 👋</h1>
-          <p className="page-subtitle">What does your car need today?</p>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+          <div>
+            <h1 className="page-title">Welcome back, {profile.full_name?.split(' ')[0] ?? 'there'} 👋</h1>
+            <p className="page-subtitle">What does your car need today?</p>
+          </div>
+          <Badge variant="info" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>🚗 Car Owner Account</Badge>
         </div>
 
         {/* ── 1. Quick Actions ───────────────────────── */}
@@ -232,9 +235,12 @@ export default async function DashboardPage() {
 
     return (
       <div className="animate-fade-in">
-        <div className="page-header">
-          <h1 className="page-title">Your Workshop</h1>
-          <p className="page-subtitle">Check your reviews and see how your bookings are going.</p>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+          <div>
+            <h1 className="page-title">Your Workshop</h1>
+            <p className="page-subtitle">Check your reviews and see how your bookings are going.</p>
+          </div>
+          <Badge variant="accent" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>🔧 Repairer Account</Badge>
         </div>
 
         <div className="stats-grid">
@@ -282,7 +288,7 @@ export default async function DashboardPage() {
 
   if (profile.role === 'parts_seller') {
     const [{ data: products, count: productCount }, { data: orders }] = await Promise.all([
-      supabase.from('products').select('*', { count: 'exact' }).eq('seller_id', profile.id).eq('is_active', true),
+      supabase.from('products').select('*', { count: 'exact' }).eq('seller_id', profile.id).eq('is_active', true).order('created_at', { ascending: false }).limit(4),
       supabase.from('orders').select('*, products(name)').eq('seller_id', profile.id).order('created_at', { ascending: false }).limit(5),
     ])
 
@@ -291,9 +297,12 @@ export default async function DashboardPage() {
 
     return (
       <div className="animate-fade-in">
-        <div className="page-header">
-          <h1 className="page-title">Your Shop</h1>
-          <p className="page-subtitle">See what&apos;s selling and what needs attention.</p>
+        <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+          <div>
+            <h1 className="page-title">Your Shop</h1>
+            <p className="page-subtitle">See what&apos;s selling and what needs attention.</p>
+          </div>
+          <Badge variant="success" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>📦 Parts Seller Account</Badge>
         </div>
 
         <div className="stats-grid">
@@ -339,11 +348,45 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <div className="empty-state">
-            <div className="empty-state__title">Nothing in yet</div>
-            <div className="empty-state__desc">Post some listings and orders will start coming in.</div>
-            <Link href="/marketplace/new" className="btn btn--primary btn--md">Add Listing</Link>
+            <div className="empty-state__title">No orders yet</div>
+            {(productCount ?? 0) > 0 ? (
+              <div className="empty-state__desc">You have active listings. Wait for customers to place an order.</div>
+            ) : (
+              <>
+                <div className="empty-state__desc">Post some listings and orders will start coming in.</div>
+                <Link href="/marketplace/new" className="btn btn--primary btn--md">Add Listing</Link>
+              </>
+            )}
           </div>
         )}
+
+        <div className="section-header" style={{ marginTop: 'var(--space-8)' }}>
+          <h2 className="section-title">Recent Listings</h2>
+          <Link href="/dashboard/listings" className="btn btn--ghost btn--sm">View all</Link>
+        </div>
+        {products && products.length > 0 ? (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-8)' }}>
+            {(products as any[]).map((p) => (
+              <Link key={p.id} href={`/dashboard/listings/${p.id}/edit`} className="card card--hover" style={{ textDecoration: 'none', overflow: 'hidden' }}>
+                <div style={{ height: 120, background: 'var(--color-surface-700)' }}>
+                  {p.images?.[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.images[0]} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem' }}>📦</div>
+                  )}
+                </div>
+                <div style={{ padding: 'var(--space-3)' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, color: 'var(--color-accent)' }}>₦{Number(p.price).toLocaleString()}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-400)' }}>{p.stock_quantity} in stock</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </div>
     )
   }

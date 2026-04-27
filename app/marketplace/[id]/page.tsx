@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { MapPin, ShoppingBag } from 'lucide-react'
+import { MapPin, ShoppingBag, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const supabase = await createClient()
   const { data: product } = await supabase
     .from('products')
-    .select('name, description, images, category, brand')
+    .select('name, description, images, category, brand, condition')
     .eq('id', id)
     .single()
   if (!product) return { title: 'Product not found — ShopMecko' }
@@ -41,7 +41,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { data: product } = await supabase
     .from('products')
-    .select('*, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
+    .select('name, description, images, category, brand, condition, street, city, state, stock_quantity, price, seller_id, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
     .eq('id', id)
     .single()
 
@@ -79,6 +79,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           {/* Info */}
           <div>
             <div style={{ marginBottom: 'var(--space-2)', display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              {product.condition && <span className="badge badge--warning">{product.condition}</span>}
               {product.category && <span className="badge badge--info">{product.category}</span>}
               {product.brand && <span className="badge badge--default">{product.brand}</span>}
               {product.stock_quantity > 0
@@ -98,6 +99,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <p style={{ color: 'var(--color-text-300)', lineHeight: 1.7, marginBottom: 'var(--space-6)' }}>
                 {product.description}
               </p>
+            )}
+
+            {(product.city || product.state || product.street) && (
+              <div style={{ marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-text-300)', fontSize: '0.9rem' }}>
+                <MapPin size={16} />
+                <span>{[product.street, product.city, product.state].filter(Boolean).join(', ')}</span>
+              </div>
             )}
 
             {product.compatible_cars?.length > 0 && (
@@ -141,9 +149,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
               </div>
             )}
             {!profile && (
-              <Link href="/login" className="btn btn--primary btn--lg btn--full">
-                Sign in to Order
-              </Link>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <Link href="/login" className="btn btn--primary btn--lg btn--full">
+                  Sign in to Order
+                </Link>
+                <Link href="/login" className="btn btn--ghost btn--lg btn--full" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  <MessageSquare size={18} />
+                  Sign in to Chat
+                </Link>
+              </div>
             )}
 
             {(product as any).profiles?.latitude && (product as any).profiles?.longitude && (

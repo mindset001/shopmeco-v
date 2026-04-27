@@ -74,16 +74,27 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
   }
 
   async function sendMessage() {
-    if (!text.trim() || !activeConvId || sending) return
+    if (!text.trim() || !activeConvId || !activeConv || sending) return
     setSending(true)
     const content = text.trim()
     setText('')
-    await supabase.from('messages').insert({
+    const { error } = await supabase.from('messages').insert({
       conversation_id: activeConvId,
       sender_id: profile.id,
       content,
       is_read: false,
     })
+
+    if (!error && activeConv.other_user?.id) {
+      await supabase.from('notifications').insert({
+        user_id: activeConv.other_user.id,
+        type: 'message',
+        title: `New message from ${profile.full_name}`,
+        body: content.length > 50 ? content.substring(0, 50) + '...' : content,
+        link: `/chat?conv=${activeConvId}`
+      })
+    }
+
     setSending(false)
   }
 

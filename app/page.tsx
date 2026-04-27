@@ -64,13 +64,14 @@ export default async function HomePage() {
 
           {/* Mechanic photo — right column */}
           <div className="hero__visual">
-            <Image
-              src="/images/hero-mechanic.jpg"
-              alt="Mechanic working on a car in a garage"
-              fill
-              sizes="(max-width: 768px) 0px, 50vw"
+            <video
+              src="/videos/mech.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
               className="hero__photo"
-              priority
+              style={{ objectFit: 'cover', width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
             />
             <div className="hero__badge">
               <div style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--color-success)', flexShrink: 0 }} />
