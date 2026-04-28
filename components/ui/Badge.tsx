@@ -6,11 +6,15 @@ type BadgeVariant =
   | 'info'
   | 'accent'
 
-interface BadgeProps {
+interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   children: React.ReactNode
   variant?: BadgeVariant
 }
 
-export default function Badge({ children, variant = 'default' }: BadgeProps) {
-  return <span className={`badge badge--${variant}`}>{children}</span>
+export default function Badge({ children, variant = 'default', className = '', ...props }: BadgeProps) {
+  return (
+    <span className={`badge badge--${variant} ${className}`.trim()} {...props}>
+      {children}
+    </span>
+  )
 }
