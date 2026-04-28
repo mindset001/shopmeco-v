@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@supabase/supabase-js'
 
 export type NotificationType = 
   | 'booking_request'

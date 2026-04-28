@@ -41,7 +41,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { data: product } = await supabase
     .from('products')
-    .select('name, description, images, category, brand, condition, street, city, state, stock_quantity, price, seller_id, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
+    .select('id, name, description, images, category, brand, condition, street, city, state, stock_quantity, price, seller_id, compatible_cars, created_at, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
     .eq('id', id)
     .single()
 
