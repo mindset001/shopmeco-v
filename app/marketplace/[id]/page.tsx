@@ -7,6 +7,7 @@ import Navbar from '@/components/nav/Navbar'
 import { formatDate } from '@/lib/utils/helpers'
 import OrderButton from './OrderButton'
 import ChatButton from './ChatButton'
+import ReportButton from '@/components/ui/ReportButton'
 import type { Metadata } from 'next'
 import LocationMapClient from '@/components/ui/LocationMapClient'
 
@@ -41,7 +42,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { data: product } = await supabase
     .from('products')
-    .select('id, name, description, images, category, brand, condition, street, city, state, stock_quantity, price, seller_id, compatible_cars, created_at, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
+    .select('id, name, description, images, category, brand, condition, stock_quantity, price, seller_id, compatible_cars, created_at, street, city, state, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
     .eq('id', id)
     .single()
 
@@ -146,6 +147,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   productName={product.name}
                   buyerId={profile.id}
                 />
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-2)' }}>
+                  <ReportButton
+                    reporterId={profile.id}
+                    reportType="product"
+                    reportedProductId={product.id}
+                    reportedUserId={product.seller_id}
+                  />
+                </div>
               </div>
             )}
             {!profile && (

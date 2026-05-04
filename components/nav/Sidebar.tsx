@@ -20,6 +20,8 @@ import {
   CalendarCheck,
   Wallet,
   CreditCard,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react'
 
 import type { UserRole } from '@/types'
@@ -45,6 +47,7 @@ const navByRole: Record<
     { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/dashboard/verification', label: 'Verification', icon: Star },
     { href: '/profile', label: 'Profile & Reviews', icon: Star },
   ],
   parts_seller: [
@@ -53,17 +56,22 @@ const navByRole: Record<
     { href: '/orders', label: 'Orders', icon: Package },
     { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/dashboard/verification', label: 'Verification', icon: Star },
     { href: '/profile', label: 'Profile', icon: User },
   ],
   admin: [
     { href: '/admin', label: 'Overview', icon: BarChart2 },
     { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/users/verifications', label: 'Verifications', icon: Star },
     { href: '/admin/products', label: 'Products', icon: ShoppingBag },
     { href: '/admin/orders', label: 'Orders', icon: Package },
     { href: '/admin/cars', label: 'Cars', icon: Car },
     { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
-    { href: '/admin/payments', label: 'Payments', icon: CreditCard },
+    { href: '/admin/payments', label: 'Escrow', icon: CreditCard },
+    { href: '/admin/payments/withdrawals', label: 'Withdrawals', icon: Wallet },
     { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+    { href: '/admin/reports', label: 'Reports', icon: ShieldCheck },
+    { href: '/admin/disputes', label: 'Disputes', icon: ShieldAlert },
     { href: '/admin/settings', label: 'Settings', icon: Settings },
   ],
 }

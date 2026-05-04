@@ -4,6 +4,7 @@ import { getCurrentProfile } from '@/lib/utils/profile'
 import { createClient } from '@/lib/supabase/server'
 import Badge from '@/components/ui/Badge'
 import OrderActions from '../OrderActions'
+import DisputeButton from '@/components/ui/DisputeButton'
 import { formatDate } from '@/lib/utils/helpers'
 import type { OrderStatus } from '@/types'
 
@@ -60,6 +61,16 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-300)' }}>
             Placed {formatDate(order.created_at)}
           </div>
+          {!isSeller && (
+            <div style={{ marginTop: 4 }}>
+              <DisputeButton
+                customerId={profile.id}
+                serviceProviderId={order.seller_id}
+                relatedType="order"
+                relatedId={order.id}
+              />
+            </div>
+          )}
         </div>
       </div>
 

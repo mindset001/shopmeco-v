@@ -97,8 +97,14 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
                         </div>
                       </div>
                       <div className="product-card__footer">
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>
-                          {p.city || p.profiles?.city || ''}
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-300)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{p.city || p.profiles?.city || 'Local'}</span>
+                          {p.condition && (
+                            <>
+                              <span>·</span>
+                              <span style={{ color: p.condition.toLowerCase() === 'new' ? 'var(--color-success)' : 'var(--color-warning)' }}>{p.condition}</span>
+                            </>
+                          )}
                         </span>
                         <span className={`badge ${p.stock_quantity > 0 ? 'badge--success' : 'badge--danger'}`}>
                           {p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'Out of stock'}

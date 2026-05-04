@@ -4,6 +4,7 @@ import { getCurrentProfile } from '@/lib/utils/profile'
 import { createClient } from '@/lib/supabase/server'
 import Badge from '@/components/ui/Badge'
 import BookingActions from '../BookingActions'
+import DisputeButton from '@/components/ui/DisputeButton'
 import { formatDate } from '@/lib/utils/helpers'
 import type { BookingStatus } from '@/types'
 
@@ -72,6 +73,16 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-300)', marginTop: 4 }}>
             Requested {formatDate(booking.created_at)}
           </div>
+          {!isRepairer && (
+            <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+              <DisputeButton
+                customerId={profile.id}
+                serviceProviderId={booking.repairer_id}
+                relatedType="booking"
+                relatedId={booking.id}
+              />
+            </div>
+          )}
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { getCurrentProfile } from '@/lib/utils/profile'
 import { createClient } from '@/lib/supabase/server'
 import { formatDate } from '@/lib/utils/helpers'
 import Badge from '@/components/ui/Badge'
+import WithdrawButton from './WithdrawButton'
 import type { TransactionType } from '@/types'
 
 const typeLabel: Record<TransactionType, string> = {
@@ -47,13 +48,20 @@ export default async function WalletPage() {
       </div>
 
       {/* Balance card */}
-      <div className="card" style={{ padding: 'var(--space-8)', marginBottom: 'var(--space-6)', background: 'var(--color-accent)', color: '#fff', borderRadius: 'var(--radius-xl)' }}>
-        <div style={{ fontSize: '0.9rem', opacity: 0.85, marginBottom: 'var(--space-2)' }}>Available Balance</div>
-        <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px' }}>
-          ₦{balance.toLocaleString()}
-        </div>
-        <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: 'var(--space-2)' }}>
-          Payments held in escrow are released by admin after job confirmation.
+      <div className="card" style={{ padding: 'var(--space-8)', marginBottom: 'var(--space-6)', background: 'var(--color-surface-800)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-300)', marginBottom: 'var(--space-2)' }}>Available Balance</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-1px', color: 'var(--color-accent)' }}>
+              ₦{balance.toLocaleString()}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--color-text-400)', marginTop: 'var(--space-2)' }}>
+              Payments held in escrow are released by admin after job confirmation.
+            </div>
+          </div>
+          <div>
+            <WithdrawButton userId={profile.id} availableBalance={balance} />
+          </div>
         </div>
       </div>
 

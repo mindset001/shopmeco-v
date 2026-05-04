@@ -8,6 +8,7 @@ import RatingStars from '@/components/ui/RatingStars'
 import { formatDate } from '@/lib/utils/helpers'
 import BookingForm from './BookingForm'
 import ReviewForm from './ReviewForm'
+import ReportButton from '@/components/ui/ReportButton'
 import type { Metadata } from 'next'
 import LocationMapClient from '@/components/ui/LocationMapClient'
 
@@ -126,6 +127,13 @@ export default async function RepairerDetailPage({ params }: PageProps) {
                     <Calendar size={18} /> Book Appointment
                   </button>
                 )}
+                <div style={{ marginLeft: 'auto' }}>
+                  <ReportButton
+                    reporterId={profile.id}
+                    reportType="user"
+                    reportedUserId={id}
+                  />
+                </div>
               </div>
             )}
           </div>
