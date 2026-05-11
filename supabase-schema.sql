@@ -317,7 +317,7 @@ CREATE TABLE escrow_payments (
   payer_id      uuid NOT NULL REFERENCES profiles(id),
   payee_id      uuid NOT NULL REFERENCES profiles(id),
   amount        numeric NOT NULL,
-  paystack_ref  text,
+  paystack_ref  text UNIQUE,
   status        payment_status NOT NULL DEFAULT 'pending',
   related_type  text NOT NULL,
   related_id    uuid NOT NULL,
@@ -664,4 +664,3 @@ CREATE POLICY "Admins can manage appeals"
 
 CREATE INDEX appeals_user_idx ON appeals(user_id);
 CREATE INDEX appeals_status_idx ON appeals(status);
-
