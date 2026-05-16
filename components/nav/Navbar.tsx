@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/types'
 import Avatar from '../ui/Avatar'
 import ThemeToggle from '../ui/ThemeToggle'
+import NotificationBell from './NotificationBell'
 
 interface NavbarProps {
   profile: Profile | null
@@ -76,6 +77,7 @@ export default function Navbar({ profile }: NavbarProps) {
           <ThemeToggle />
           {profile ? (
             <>
+              <NotificationBell userId={profile.id} />
               <div className="navbar__role-badge" style={{
                 backgroundColor: getRoleDisplay(profile.role).color,
                 color: '#fff',

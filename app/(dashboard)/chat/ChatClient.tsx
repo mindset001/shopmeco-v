@@ -1,25 +1,29 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Send } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile } from '@/types'
+import type { Conversation, Message, Profile } from '@/types'
 import Avatar from '@/components/ui/Avatar'
 import { formatRelativeTime } from '@/lib/utils/helpers'
 import Toaster from '@/components/ui/Toaster'
 
 interface Props {
   profile: Profile
-  conversations: any[]
+  conversations: ChatConversation[]
   selectedConvId: string | null
-  initialMessages: any[]
+  initialMessages: Message[]
+}
+
+type ChatConversation = Conversation & {
+  other_user?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'>
 }
 
 export default function ChatClient({ profile, conversations, selectedConvId: initConvId, initialMessages }: Props) {
   const router = useRouter()
   const [activeConvId, setActiveConvId] = useState<string | null>(initConvId)
-  const [messages, setMessages] = useState<any[]>(initialMessages)
+  const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -41,7 +45,7 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${activeConvId}` },
         (payload) => {
-          const newMessage = payload.new
+          const newMessage = payload.new as Message
           setMessages((prev) => [...prev, newMessage])
           
           // Only notify if message is from someone else and browser has permission
@@ -91,7 +95,7 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
         type: 'message',
         title: `New message from ${profile.full_name}`,
         body: content.length > 50 ? content.substring(0, 50) + '...' : content,
-        link: `/chat?conv=${activeConvId}`
+        data: { link: `/chat?conv=${activeConvId}` },
       })
     }
 

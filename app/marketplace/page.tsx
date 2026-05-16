@@ -1,13 +1,24 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
 import { ShoppingBag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/nav/Navbar'
 import { getCurrentProfile } from '@/lib/utils/profile'
+import type { Product } from '@/types'
 import MarketplaceFilters from './MarketplaceFilters'
 
 interface PageProps {
   searchParams: Promise<{ category?: string; brand?: string; q?: string; location?: string; model?: string; condition?: string }>
+}
+
+type MarketplaceProduct = Product & {
+  city?: string | null
+  condition?: string | null
+  profiles?: { city: string | null } | null
+}
+
+type ProductFilterRow = {
+  city?: string | null
+  profiles?: { city?: string | null } | null
 }
 
 export default async function MarketplacePage({ searchParams }: PageProps) {
@@ -31,16 +42,20 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
   if (model) query = query.contains('compatible_cars', [model])
 
   const { data: products } = await query.limit(48)
+  const productList = (products ?? []) as MarketplaceProduct[]
 
-  // Unique categories, brands, and locations for filter
   const { data: allProducts } = await supabase
     .from('products')
     .select('category, brand, city, profiles(city)')
     .eq('is_active', true)
 
-  const categories = [...new Set((allProducts ?? []).map((p) => p.category).filter(Boolean))]
-  const brands = [...new Set((allProducts ?? []).map((p) => p.brand).filter(Boolean))]
-  const locations = [...new Set((allProducts ?? []).map((p: any) => p.city || p.profiles?.city).filter(Boolean))].sort()
+  const locations = [
+    ...new Set(
+      ((allProducts ?? []) as ProductFilterRow[])
+        .map((p) => p.city || p.profiles?.city)
+        .filter((value): value is string => Boolean(value))
+    ),
+  ].sort()
 
   return (
     <>
@@ -49,32 +64,32 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
         <div className="page-header">
           <h1 className="page-title">Spare Parts Marketplace</h1>
           <p className="page-subtitle">
-            Browse {products?.length ?? 0} listings from verified sellers
+            Browse {productList.length} listings from verified sellers
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 'var(--space-8)', alignItems: 'flex-start' }}>
+        <div className="marketplace-layout">
           {/* Filters sidebar */}
-          <div style={{ width: 220, flexShrink: 0 }}>
+          <aside className="marketplace-layout__filters" aria-label="Marketplace filters">
             <MarketplaceFilters
               locations={locations as string[]}
               current={{ category, brand, q, location, model, condition }}
             />
-          </div>
+          </aside>
 
           {/* Product grid */}
-          <div style={{ flex: 1 }}>
+          <div className="marketplace-layout__content">
             {profile?.role === 'parts_seller' && (
-              <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div className="marketplace-actions">
                 <Link href="/marketplace/new" className="btn btn--primary btn--md">
                   + New Listing
                 </Link>
               </div>
             )}
 
-            {products && products.length > 0 ? (
+            {productList.length > 0 ? (
               <div className="product-grid">
-                {(products as any[]).map((p) => (
+                {productList.map((p) => (
                   <Link key={p.id} href={`/marketplace/${p.id}`}>
                     <div className="card card--hover product-card">
                       <div className="product-card__image">

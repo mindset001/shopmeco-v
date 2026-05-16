@@ -22,6 +22,8 @@ import {
   CreditCard,
   ShieldCheck,
   ShieldAlert,
+  Menu,
+  X,
 } from 'lucide-react'
 
 import type { UserRole } from '@/types'
@@ -85,6 +87,7 @@ export default function Sidebar({ role }: SidebarProps) {
   const router = useRouter()
   const links = navByRole[role]
   const [unread, setUnread] = useState(0)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => {
     async function fetchUnread() {
@@ -115,40 +118,116 @@ export default function Sidebar({ role }: SidebarProps) {
   }
 
   return (
-    <aside className="sidebar">
-      <nav className="sidebar__nav">
-        {links.map(({ href, label, icon: Icon }) => {
-          const active =
-            href === '/dashboard'
-              ? pathname === href
-              : pathname.startsWith(href)
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`sidebar__link${active ? ' sidebar__link--active' : ''}`}
-            >
-              <Icon size={18} />
-              <span>{label}</span>
-              {href === '/chat' && unread > 0 && (
-                <span style={{
-                  marginLeft: 'auto', background: 'var(--color-accent)', color: '#fff',
-                  borderRadius: 999, fontSize: '0.65rem', fontWeight: 700,
-                  padding: '1px 6px', lineHeight: 1.6,
-                }}>
-                  {unread > 99 ? '99+' : unread}
-                </span>
-              )}
-            </Link>
-          )
-        })}
-      </nav>
-      <div className="sidebar__footer">
-        <button onClick={handleSignOut} className="sidebar__link sidebar__link--danger">
-          <LogOut size={18} />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </aside>
+    <>
+      <aside className="sidebar">
+        <nav className="sidebar__nav">
+          {links.map(({ href, label, icon: Icon }) => {
+            const active =
+              href === '/dashboard'
+                ? pathname === href
+                : pathname.startsWith(href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`sidebar__link${active ? ' sidebar__link--active' : ''}`}
+              >
+                <Icon size={18} />
+                <span>{label}</span>
+                {href === '/chat' && unread > 0 && (
+                  <span style={{
+                    marginLeft: 'auto', background: 'var(--color-accent)', color: '#fff',
+                    borderRadius: 999, fontSize: '0.65rem', fontWeight: 700,
+                    padding: '1px 6px', lineHeight: 1.6,
+                  }}>
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
+        </nav>
+        <div className="sidebar__footer">
+          <button onClick={handleSignOut} className="sidebar__link sidebar__link--danger">
+            <LogOut size={18} />
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </aside>
+
+      <button
+        type="button"
+        className="mobile-sidebar-toggle"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open dashboard menu"
+        aria-expanded={mobileOpen}
+      >
+        <Menu size={18} />
+        <span>Menu</span>
+      </button>
+
+      {mobileOpen && (
+        <div className="mobile-sidebar" role="dialog" aria-modal="true" aria-label="Dashboard navigation">
+          <button
+            type="button"
+            className="mobile-sidebar__overlay"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Close dashboard menu"
+          />
+          <aside className="mobile-sidebar__panel">
+            <div className="mobile-sidebar__header">
+              <div>
+                <div className="mobile-sidebar__title">Dashboard</div>
+                <div className="mobile-sidebar__subtitle">Navigation</div>
+              </div>
+              <button
+                type="button"
+                className="mobile-sidebar__close"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close dashboard menu"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <nav className="sidebar__nav mobile-sidebar__nav">
+              {links.map(({ href, label, icon: Icon }) => {
+                const active =
+                  href === '/dashboard'
+                    ? pathname === href
+                    : pathname.startsWith(href)
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`sidebar__link${active ? ' sidebar__link--active' : ''}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon size={18} />
+                    <span>{label}</span>
+                    {href === '/chat' && unread > 0 && (
+                      <span style={{
+                        marginLeft: 'auto', background: 'var(--color-accent)', color: '#fff',
+                        borderRadius: 999, fontSize: '0.65rem', fontWeight: 700,
+                        padding: '1px 6px', lineHeight: 1.6,
+                      }}>
+                        {unread > 99 ? '99+' : unread}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <div className="sidebar__footer">
+              <button onClick={handleSignOut} className="sidebar__link sidebar__link--danger">
+                <LogOut size={18} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
   )
 }
