@@ -20,18 +20,20 @@ export default async function AdminUserDetailPage({
     { data: cars },
     { data: products },
     { data: orders },
+    { count: createdAccountsCount },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', id).single(),
     supabase.from('repairer_details').select('*').eq('id', id).single(),
     supabase.from('cars').select('*').eq('owner_id', id).order('created_at', { ascending: false }),
     supabase.from('products').select('id, name, price, category, is_active, created_at').eq('seller_id', id).order('created_at', { ascending: false }),
     supabase.from('orders').select('id, total_price, status, created_at').or(`buyer_id.eq.${id},seller_id.eq.${id}`).order('created_at', { ascending: false }).limit(10),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('created_by', id),
   ])
 
   if (!profile) notFound()
 
   const roleColor: Record<string, 'accent' | 'info' | 'success' | 'warning'> = {
-    car_owner: 'info', repairer: 'accent', parts_seller: 'success', admin: 'warning',
+    car_owner: 'info', repairer: 'accent', parts_seller: 'success', field_agent: 'warning', admin: 'warning',
   }
 
   const fields: { label: string; value: string | number | null | undefined }[] = [
@@ -142,6 +144,24 @@ export default async function AdminUserDetailPage({
               <span style={{ color: 'var(--color-text-300)', fontSize: '0.875rem' }}>Orders</span>
               <span style={{ fontWeight: 600 }}>{orders?.length ?? 0}</span>
             </div>
+            {(profile.role === 'field_agent' || profile.role === 'admin') && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--color-text-300)', fontSize: '0.875rem' }}>Accounts Created</span>
+                <span style={{ fontWeight: 600 }}>{createdAccountsCount ?? 0}</span>
+              </div>
+            )}
+            {profile.role === 'field_agent' && (
+              <div>
+                <span style={{ color: 'var(--color-text-300)', fontSize: '0.875rem', display: 'block', marginBottom: 6 }}>Assigned Types</span>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {(profile.field_agent_allowed_roles ?? []).map((role: string) => (
+                    <Badge key={role} variant={role === 'repairer' ? 'accent' : 'success'}>
+                      {role.replace(/_/g, ' ')}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

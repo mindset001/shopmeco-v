@@ -1,4 +1,4 @@
-export type UserRole = 'car_owner' | 'repairer' | 'parts_seller' | 'admin'
+export type UserRole = 'car_owner' | 'repairer' | 'parts_seller' | 'field_agent' | 'admin'
 
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled'
 
@@ -22,6 +22,8 @@ export interface Profile {
   longitude: number | null
   is_verified: boolean
   is_suspended: boolean
+  created_by: string | null
+  field_agent_allowed_roles: UserRole[]
   shop_images: string[]
   created_at: string
 }

@@ -15,6 +15,8 @@ export default async function AdminPage() {
     { count: totalBookings },
     { count: newUsersThisWeek },
     { count: newOrdersThisWeek },
+    { count: totalFieldAgents },
+    { count: fieldAgentCreatedAccounts },
     { data: revenueData },
     { data: recentUsers },
   ] = await Promise.all([
@@ -24,6 +26,8 @@ export default async function AdminPage() {
     supabase.from('bookings').select('*', { count: 'exact', head: true }),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
     supabase.from('orders').select('*', { count: 'exact', head: true }).gte('created_at', oneWeekAgo),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'field_agent'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).not('created_by', 'is', null).in('role', ['repairer', 'parts_seller']),
     supabase.from('orders').select('total_price').eq('status', 'delivered'),
     supabase.from('profiles').select('id, full_name, role, created_at, is_verified').order('created_at', { ascending: false }).limit(8),
   ])
@@ -31,7 +35,7 @@ export default async function AdminPage() {
   const totalRevenue = (revenueData ?? []).reduce((sum: number, o: any) => sum + Number(o.total_price), 0)
 
   const roleColor: Record<string, 'accent' | 'info' | 'success' | 'warning'> = {
-    car_owner: 'info', repairer: 'accent', parts_seller: 'success', admin: 'warning',
+    car_owner: 'info', repairer: 'accent', parts_seller: 'success', field_agent: 'warning', admin: 'warning',
   }
 
   return (
@@ -61,6 +65,11 @@ export default async function AdminPage() {
           <div className="stat-card__value">{totalBookings ?? 0}</div>
         </div>
         <div className="stat-card">
+          <div className="stat-card__label">Field Agents</div>
+          <div className="stat-card__value">{totalFieldAgents ?? 0}</div>
+          <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-300)', marginTop: 4 }}>{fieldAgentCreatedAccounts ?? 0} accounts created</div>
+        </div>
+        <div className="stat-card">
           <div className="stat-card__label">Revenue (Delivered)</div>
           <div className="stat-card__value" style={{ fontSize: '1.5rem' }}>₦{totalRevenue.toLocaleString()}</div>
         </div>
@@ -68,6 +77,7 @@ export default async function AdminPage() {
 
       <div style={{ display: 'flex', gap: 'var(--space-4)', marginBottom: 'var(--space-8)', flexWrap: 'wrap' }}>
         <Link href="/admin/users" className="btn btn--secondary btn--md">Manage Users</Link>
+        <Link href="/admin/field-agents" className="btn btn--secondary btn--md">Field Agents</Link>
         <Link href="/admin/products" className="btn btn--secondary btn--md">Manage Products</Link>
         <Link href="/admin/orders" className="btn btn--secondary btn--md">View Orders</Link>
         <Link href="/admin/bookings" className="btn btn--secondary btn--md">View Bookings</Link>

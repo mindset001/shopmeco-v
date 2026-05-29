@@ -22,6 +22,7 @@ import {
   CreditCard,
   ShieldCheck,
   ShieldAlert,
+  UserPlus,
   Menu,
   X,
 } from 'lucide-react'
@@ -61,9 +62,14 @@ const navByRole: Record<
     { href: '/dashboard/verification', label: 'Verification', icon: Star },
     { href: '/profile', label: 'Profile', icon: User },
   ],
+  field_agent: [
+    { href: '/dashboard/field-agent', label: 'Create Accounts', icon: UserPlus },
+    { href: '/profile', label: 'Profile', icon: User },
+  ],
   admin: [
     { href: '/admin', label: 'Overview', icon: BarChart2 },
     { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/field-agents', label: 'Field Agents', icon: UserPlus },
     { href: '/admin/users/verifications', label: 'Verifications', icon: Star },
     { href: '/admin/products', label: 'Products', icon: ShoppingBag },
     { href: '/admin/orders', label: 'Orders', icon: Package },

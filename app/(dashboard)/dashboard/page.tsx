@@ -391,6 +391,10 @@ export default async function DashboardPage() {
     )
   }
 
+  if (profile.role === 'field_agent') {
+    redirect('/dashboard/field-agent')
+  }
+
   // admin — redirect to admin panel
   redirect('/admin')
 }

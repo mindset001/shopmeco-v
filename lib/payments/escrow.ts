@@ -14,55 +14,20 @@ export async function holdEscrowPayment(params: {
   if (!reference) throw new Error('Missing Paystack reference')
   if (!Number.isFinite(amount) || amount <= 0) throw new Error('Invalid payment amount')
 
-  const { data: existing, error: existingError } = await supabase
-    .from('escrow_payments')
-    .select('id')
-    .eq('paystack_ref', reference)
-    .maybeSingle()
-
-  if (existingError) throw existingError
-  if (existing) return { alreadyProcessed: true, escrowId: existing.id as string }
-
-  const { data: escrow, error: escrowError } = await supabase
-    .from('escrow_payments')
-    .insert({
-      payer_id: metadata.payer_id,
-      payee_id: metadata.payee_id,
-      amount,
-      paystack_ref: reference,
-      status: 'held',
-      related_type: metadata.type,
-      related_id: metadata.related_id,
-    })
-    .select('id')
-    .single()
-
-  if (escrowError) {
-    if (escrowError.code === '23505') {
-      return { alreadyProcessed: true, escrowId: null }
-    }
-
-    throw escrowError
-  }
-
-  const { error: transactionError } = await supabase.from('wallet_transactions').insert({
-    user_id: metadata.payer_id,
-    type: 'escrow_hold',
-    amount,
-    description: `Payment held in escrow for ${metadata.type} #${metadata.related_id.slice(0, 8)}`,
-    related_type: metadata.type,
-    related_id: metadata.related_id,
+  const { data, error } = await supabase.rpc('hold_escrow_payment', {
+    p_reference: reference,
+    p_related_type: metadata.type,
+    p_related_id: metadata.related_id,
+    p_payer_id: metadata.payer_id,
+    p_payee_id: metadata.payee_id,
+    p_amount: amount,
   })
 
-  if (transactionError) throw transactionError
+  if (error) throw error
 
-  const table = metadata.type === 'booking' ? 'bookings' : 'orders'
-  const { error: updateError } = await supabase
-    .from(table)
-    .update({ payment_status: 'in_escrow' })
-    .eq('id', metadata.related_id)
-
-  if (updateError) throw updateError
-
-  return { alreadyProcessed: false, escrowId: escrow.id as string }
+  const result = data as { already_processed?: boolean; escrow_id?: string | null } | null
+  return {
+    alreadyProcessed: Boolean(result?.already_processed),
+    escrowId: result?.escrow_id ?? null,
+  }
 }

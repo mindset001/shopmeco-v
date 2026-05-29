@@ -27,7 +27,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
   const { data: users, count } = await query.order('created_at', { ascending: false }).range(from, to)
 
   const roleColor: Record<string, 'accent' | 'info' | 'success' | 'warning'> = {
-    car_owner: 'info', repairer: 'accent', parts_seller: 'success', admin: 'warning',
+    car_owner: 'info', repairer: 'accent', parts_seller: 'success', field_agent: 'warning', admin: 'warning',
   }
 
   // Build base query string (without page) for pagination links
@@ -49,7 +49,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
           <AdminSearchInput placeholder="Search by name…" />
         </Suspense>
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-          {(['', 'car_owner', 'repairer', 'parts_seller', 'admin'] as const).map((r) => {
+          {(['', 'car_owner', 'repairer', 'parts_seller', 'field_agent', 'admin'] as const).map((r) => {
             const params = new URLSearchParams()
             if (q) params.set('q', q)
             if (r) params.set('role', r)

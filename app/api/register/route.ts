@@ -1,11 +1,23 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import type { UserRole } from '@/types'
+
+const PUBLIC_ROLES = new Set<UserRole>(['car_owner', 'repairer', 'parts_seller'])
 
 export async function POST(request: Request) {
-  const { email, password, fullName, role } = await request.json()
+  const { email, password, fullName, role } = await request.json() as {
+    email?: string
+    password?: string
+    fullName?: string
+    role?: UserRole
+  }
 
   if (!email || !password || !fullName || !role) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+
+  if (!PUBLIC_ROLES.has(role)) {
+    return NextResponse.json({ error: 'Invalid account role' }, { status: 400 })
   }
 
   const sb = createClient(
