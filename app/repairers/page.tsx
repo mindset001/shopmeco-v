@@ -5,9 +5,10 @@ import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
 import RatingStars from '@/components/ui/RatingStars'
 import RepairersSearchBar from './RepairersSearchBar'
+import { categoriesFromSymptoms } from '@/lib/car-owner/insights'
 
 interface PageProps {
-  searchParams: Promise<{ city?: string; specialization?: string; available?: string }>
+  searchParams: Promise<{ city?: string; specialization?: string; available?: string; symptoms?: string; emergency?: string; q?: string }>
 }
 
 export default async function RepairersPage({ searchParams }: PageProps) {
@@ -35,14 +36,33 @@ export default async function RepairersPage({ searchParams }: PageProps) {
     filtered = filtered.filter((r: any) => r.repairer_details?.is_available)
   }
 
-  if (sp.specialization) {
-    const spec = sp.specialization.toLowerCase()
+  const symptoms = sp.symptoms?.split(',').filter(Boolean) ?? []
+  const requestedSpecs = sp.specialization
+    ? sp.specialization.split(',').map((spec) => spec.trim()).filter(Boolean)
+    : categoriesFromSymptoms(symptoms)
+
+  if (requestedSpecs.length > 0) {
+    const specs = requestedSpecs.map((spec) => spec.toLowerCase())
     filtered = filtered.filter((r: any) =>
       (r.repairer_details?.specializations as string[] ?? []).some((s: string) =>
-        s.toLowerCase().includes(spec)
+        specs.some((spec) => s.toLowerCase().includes(spec))
       )
     )
   }
+
+  function matchScore(repairer: any) {
+    let score = 0
+    if (repairer.is_verified) score += 35
+    if (repairer.repairer_details?.is_available) score += 25
+    if (Number(repairer.repairer_details?.rating ?? 0) >= 4) score += 15
+    const specs = (repairer.repairer_details?.specializations as string[] ?? []).map((s) => s.toLowerCase())
+    for (const requested of requestedSpecs) {
+      if (specs.some((spec) => spec.includes(requested.toLowerCase()))) score += 15
+    }
+    return Math.min(score, 100)
+  }
+
+  filtered = filtered.sort((a: any, b: any) => matchScore(b) - matchScore(a))
 
   return (
     <>
@@ -55,11 +75,16 @@ export default async function RepairersPage({ searchParams }: PageProps) {
 
         <RepairersSearchBar current={sp} />
 
-        {sp.specialization && (
-          <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-            <span style={{ fontSize: '0.9rem', color: 'var(--color-text-300)' }}>
-              Showing repairers for: <strong style={{ color: 'var(--color-accent)' }}>{sp.specialization}</strong>
-            </span>
+        {(requestedSpecs.length > 0 || sp.emergency === '1') && (
+          <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            {sp.emergency === '1' && (
+              <span className="badge badge--danger">Emergency mode</span>
+            )}
+            {requestedSpecs.length > 0 && (
+              <span style={{ fontSize: '0.9rem', color: 'var(--color-text-300)' }}>
+                Matched for: <strong style={{ color: 'var(--color-accent)' }}>{requestedSpecs.join(', ')}</strong>
+              </span>
+            )}
           </div>
         )}
 
@@ -101,6 +126,13 @@ export default async function RepairersPage({ searchParams }: PageProps) {
                     </div>
                   </div>
 
+                  {(requestedSpecs.length > 0 || sp.emergency === '1') && (
+                    <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--color-text-300)' }}>Match confidence</span>
+                      <span style={{ fontWeight: 800, color: 'var(--color-accent)' }}>{matchScore(r)}%</span>
+                    </div>
+                  )}
+
                   {r.repairer_details?.specializations?.length > 0 && (
                     <div className="repairer-card__tags">
                       {(r.repairer_details.specializations as string[]).slice(0, 3).map((s: string) => (
@@ -128,7 +160,7 @@ export default async function RepairersPage({ searchParams }: PageProps) {
           <div className="empty-state" style={{ marginTop: 'var(--space-12)' }}>
             <Wrench size={48} className="empty-state__icon" />
             <div className="empty-state__title">No repairers found</div>
-            <div className="empty-state__desc">Try searching a different city or clearing filters.</div>
+            <div className="empty-state__desc">Try searching a different city, clearing filters, or using emergency mode for available repairers.</div>
             <Link href="/repairers" className="btn btn--ghost btn--md">Clear filters</Link>
           </div>
         )}

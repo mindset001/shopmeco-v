@@ -6,6 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 import { toast } from '@/components/ui/Toaster'
 import { ShieldAlert } from 'lucide-react'
 import ImageUploadGrid from '@/components/ui/ImageUploadGrid'
+import {
+  SERVICE_ESTIMATES,
+  adjustEstimateForMode,
+  formatNaira,
+  serviceKeyFromLabel,
+} from '@/lib/car-owner/insights'
 
 const SERVICE_TYPES = [
   'Engine Repair',
@@ -36,6 +42,7 @@ interface Car {
   make: string
   model: string
   year: number | null
+  mileage?: number | null
 }
 
 export default function BookingForm({
@@ -50,7 +57,10 @@ export default function BookingForm({
   const searchParams = useSearchParams()
 
   const [date, setDate] = useState('')
-  const [serviceType, setServiceType] = useState(searchParams.get('service') ?? '')
+  const initialSpecialization = searchParams.get('specialization')?.split(',')[0]
+  const [serviceType, setServiceType] = useState(searchParams.get('service') ?? (
+    initialSpecialization ? SERVICE_TYPES.find((type) => type.includes(initialSpecialization)) ?? '' : ''
+  ))
   const [mode, setMode] = useState<'workshop' | 'home'>('workshop')
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>(() => {
     const raw = searchParams.get('symptoms')
@@ -69,7 +79,7 @@ export default function BookingForm({
     const supabase = createClient()
     supabase
       .from('cars')
-      .select('id, make, model, year')
+      .select('id, make, model, year, mileage')
       .eq('owner_id', customerId)
       .order('created_at', { ascending: false })
       .then(({ data }) => { if (data) setCars(data as Car[]) })
@@ -80,6 +90,10 @@ export default function BookingForm({
       prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
     )
   }
+
+  const selectedCar = cars.find((car) => car.id === carId)
+  const baseEstimate = serviceType ? SERVICE_ESTIMATES[serviceKeyFromLabel(serviceType)] : null
+  const estimate = baseEstimate ? adjustEstimateForMode(baseEstimate, mode) : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -255,6 +269,28 @@ export default function BookingForm({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {estimate && (
+          <div style={{ padding: 'var(--space-4)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface-800)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap', marginBottom: 6 }}>
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-text-400)', marginBottom: 2 }}>Estimated range</div>
+                <div style={{ fontWeight: 800, color: 'var(--color-accent)' }}>
+                  {formatNaira(estimate.min)} - {formatNaira(estimate.max)}
+                </div>
+              </div>
+              {selectedCar?.mileage != null && (
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--color-text-400)', marginBottom: 2 }}>Car mileage</div>
+                  <div style={{ fontWeight: 700 }}>{selectedCar.mileage.toLocaleString()} km</div>
+                </div>
+              )}
+            </div>
+            <p style={{ color: 'var(--color-text-300)', fontSize: '0.82rem', lineHeight: 1.5 }}>
+              {estimate.note}
+            </p>
           </div>
         )}
 

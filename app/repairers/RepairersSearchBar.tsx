@@ -16,7 +16,7 @@ const CATEGORIES = [
 ]
 
 interface Props {
-  current: { city?: string; available?: string; specialization?: string }
+  current: { city?: string; available?: string; specialization?: string; symptoms?: string; emergency?: string; q?: string }
 }
 
 export default function RepairersSearchBar({ current }: Props) {
@@ -34,6 +34,9 @@ export default function RepairersSearchBar({ current }: Props) {
     if (c) sp.set('city', c)
     if (a) sp.set('available', a)
     if (s) sp.set('specialization', s)
+    if (current.symptoms) sp.set('symptoms', current.symptoms)
+    if (current.emergency) sp.set('emergency', current.emergency)
+    if (current.q) sp.set('q', current.q)
     return sp
   }
 

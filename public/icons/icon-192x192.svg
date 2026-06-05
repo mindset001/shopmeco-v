@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="42" fill="#111827"/>
+  <path d="M136.5 65.3a34 34 0 0 0-46.2 46.2l-36.6 36.6a8 8 0 0 0 11.3 11.3l36.6-36.6a34 34 0 0 0 46.2-46.2l-13.5 13.5a12 12 0 0 1-17-17L131 59.4a34 34 0 0 0-5.5 5.9z" fill="none"/>
+  <g transform="translate(96,96)">
+    <circle cx="0" cy="0" r="52" fill="#f97316" opacity="0.15"/>
+    <path transform="translate(-22,-22) scale(1.83)" d="M20.7 3.3a1 1 0 0 0-1 .3l-3.6 3.6a1 1 0 0 0 0 1.4l1 1-4.5 4.5-1-1a1 1 0 0 0-1.4 0L6.6 16.7a1 1 0 0 0 0 1.4l3.6 3.6a1 1 0 0 0 1.4 0l3.6-3.6a1 1 0 0 0 0-1.4l-1-1 4.5-4.5 1 1a1 1 0 0 0 1.4 0l3.6-3.6a1 1 0 0 0 0-1.4l-3.6-3.6a1 1 0 0 0-.4-.3z" fill="#f97316"/>
+    <text x="0" y="24" font-family="system-ui,-apple-system,sans-serif" font-size="40" font-weight="800" text-anchor="middle" fill="#f97316">SM</text>
+  </g>
+</svg>

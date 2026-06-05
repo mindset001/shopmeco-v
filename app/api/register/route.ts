@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // Create user with email already confirmed
+  // Create user with email already confirmed (can later add email verification if needed)
   const { data: { user }, error: createError } = await sb.auth.admin.createUser({
     email,
     password,
@@ -41,5 +41,5 @@ export async function POST(request: Request) {
   // Upsert profile (trigger may have already done it)
   await sb.from('profiles').upsert({ id: user!.id, full_name: fullName, role })
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, user_id: user!.id })
 }

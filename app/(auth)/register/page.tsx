@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Car, Wrench, ShoppingBag, Mail, Lock, User } from 'lucide-react'
+import { Car, Wrench, ShoppingBag, Mail, Lock, User, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { UserRole } from '@/types'
 import Button from '@/components/ui/Button'
@@ -23,13 +23,23 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<UserRole>('car_owner')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (step === 1) { setStep(2); return }
+    if (step === 1) {
+      if (password !== confirmPassword) {
+        setError('Passwords do not match')
+        return
+      }
+      setError(null)
+      setStep(2)
+      return
+    }
 
     setError(null)
     setLoading(true)
@@ -61,6 +71,38 @@ export default function RegisterPage() {
     toast('You\'re in. Welcome to ShopMecko.', 'success')
     router.push('/dashboard')
     router.refresh()
+  }
+
+  async function handleGoogleSignUp() {
+    setGoogleLoading(true)
+    setError(null)
+
+    const supabase = createClient()
+    
+    // For Google OAuth, we need to pass the role as a state or custom data
+    // Using redirect URL with role parameter
+    const redirectUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/auth/callback?role=${role}`
+    
+    const { data, error: googleError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+
+    if (googleError) {
+      setError(googleError.message)
+      setGoogleLoading(false)
+      return
+    }
+
+    if (data.url) {
+      window.location.href = data.url
+    }
   }
 
   return (
@@ -115,6 +157,17 @@ export default function RegisterPage() {
                   minLength={8}
                   autoComplete="new-password"
                 />
+                <Input
+                  label="Confirm password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  icon={<Lock size={16} />}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
               </>
             ) : (
               <div className="role-grid">
@@ -163,6 +216,47 @@ export default function RegisterPage() {
                 {step === 1 ? 'Continue' : 'Create Account'}
               </Button>
             </div>
+
+            {step === 1 && (
+              <>
+                <div style={{ 
+                  position: 'relative', 
+                  margin: 'var(--space-4) 0',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ 
+                    position: 'absolute',
+                    top: '50%',
+                    left: 0,
+                    right: 0,
+                    height: '1px',
+                    backgroundColor: 'var(--color-border)',
+                    transform: 'translateY(-50%)'
+                  }}></div>
+                  <span style={{ 
+                    position: 'relative',
+                    backgroundColor: 'var(--color-bg-100)',
+                    padding: '0 var(--space-2)',
+                    fontSize: '0.75rem',
+                    color: 'var(--color-text-300)',
+                    textTransform: 'uppercase'
+                  }}>
+                    Or sign up with
+                  </span>
+                </div>
+
+                <Button 
+                  type="button"
+                  fullWidth
+                  variant="secondary"
+                  loading={googleLoading}
+                  onClick={handleGoogleSignUp}
+                >
+                  <LogIn size={16} style={{ marginRight: 'var(--space-2)' }} />
+                  Google
+                </Button>
+              </>
+            )}
           </form>
 
           <div className="auth-footer">
