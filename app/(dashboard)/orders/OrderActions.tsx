@@ -44,6 +44,10 @@ export default function OrderActions({ orderId, currentStatus, isSeller }: Props
   }
 
   async function cancel() {
+    const confirmed = window.confirm(
+      'Cancel this order? Any payment already made will be reviewed for refund — this cannot be undone.'
+    )
+    if (!confirmed) return
     setLoading(true)
     const supabase = createClient()
     const { error } = await supabase.from('orders').update({ status: 'cancelled' }).eq('id', orderId)

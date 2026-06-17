@@ -22,12 +22,11 @@ export default function ChatButton({ sellerId, sellerName, productName, buyerId 
     setLoading(true)
     const supabase = createClient()
 
-    // Find or create conversation
+    // Find or create conversation — explicit and() inside or() to handle both participant orderings
     const { data: existing } = await supabase
       .from('conversations')
       .select('id')
-      .or(`participant_1.eq.${buyerId},participant_2.eq.${buyerId}`)
-      .or(`participant_1.eq.${sellerId},participant_2.eq.${sellerId}`)
+      .or(`and(participant_1.eq.${buyerId},participant_2.eq.${sellerId}),and(participant_1.eq.${sellerId},participant_2.eq.${buyerId})`)
       .limit(1)
       .single()
 

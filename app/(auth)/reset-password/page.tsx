@@ -19,16 +19,30 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    // Check if user has valid reset token from email link
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
+    const code = new URLSearchParams(window.location.search).get('code')
+
+    async function init() {
+      if (code) {
+        // PKCE flow: exchange the code from the email link for a session
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          router.push('/forgot-password')
+          return
+        }
         setValidToken(true)
       } else {
-        setError('Invalid or expired reset link. Please request a new one.')
-        router.push('/forgot-password')
+        // Already have a recovery session (e.g. user refreshed the page)
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) {
+          setValidToken(true)
+        } else {
+          router.push('/forgot-password')
+        }
       }
-    })
+    }
+
+    init()
   }, [router])
 
   async function handleSubmit(e: React.FormEvent) {

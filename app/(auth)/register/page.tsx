@@ -9,7 +9,6 @@ import type { UserRole } from '@/types'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Toaster from '@/components/ui/Toaster'
-import { toast } from '@/components/ui/Toaster'
 
 const roles: { value: UserRole; label: string; icon: React.ElementType; desc: string }[] = [
   { value: 'car_owner', label: 'Car Owner', icon: Car, desc: 'I need repairs or parts' },
@@ -44,7 +43,6 @@ export default function RegisterPage() {
     setError(null)
     setLoading(true)
 
-    // Create user via server route (auto-confirms email)
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -58,19 +56,7 @@ export default function RegisterPage() {
       return
     }
 
-    // Sign in immediately
-    const supabase = createClient()
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (signInError) {
-      setError(signInError.message)
-      setLoading(false)
-      return
-    }
-
-    toast('You\'re in. Welcome to ShopMecko.', 'success')
-    router.push('/dashboard')
-    router.refresh()
+    router.push(`/verify-email?email=${encodeURIComponent(email)}`)
   }
 
   async function handleGoogleSignUp() {

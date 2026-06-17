@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Badge from '@/components/ui/Badge'
-import { ShoppingBag, Edit, Eye, EyeOff, Trash2 } from 'lucide-react'
+import DeleteListingButton from './DeleteListingButton'
+import { ShoppingBag, Edit, Eye } from 'lucide-react'
 
 export default async function MyListingsPage() {
   const profile = await getCurrentProfile()
@@ -80,6 +81,7 @@ export default async function MyListingsPage() {
                         <Link href={`/dashboard/listings/${p.id}/edit`} className="btn btn--ghost btn--sm" aria-label="Edit listing">
                           <Edit size={16} />
                         </Link>
+                        <DeleteListingButton productId={p.id} />
                       </div>
                     </td>
                   </tr>

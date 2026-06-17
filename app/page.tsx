@@ -222,7 +222,14 @@ export default async function HomePage() {
       </main>
 
       <footer style={{ borderTop: '1px solid var(--color-border)', padding: 'var(--space-8) 0', textAlign: 'center', color: 'var(--color-text-400)', fontSize: '0.875rem' }}>
-        <div className="container">© {new Date().getFullYear()} ShopMecko. All rights reserved.</div>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Link href="/repairers" style={{ color: 'var(--color-text-400)' }}>Find a Repairer</Link>
+            <Link href="/marketplace" style={{ color: 'var(--color-text-400)' }}>Marketplace</Link>
+            <Link href="/careers" style={{ color: 'var(--color-text-400)' }}>Careers</Link>
+          </div>
+          <div>© {new Date().getFullYear()} ShopMecko. All rights reserved.</div>
+        </div>
       </footer>
     </>
   )
