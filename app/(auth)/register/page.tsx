@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Car, Wrench, ShoppingBag, Mail, Lock, User, LogIn, Phone } from 'lucide-react'
+import { Car, Wrench, ShoppingBag, Mail, Lock, User, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { UserRole } from '@/types'
 import Button from '@/components/ui/Button'
@@ -21,7 +21,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
+
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<UserRole>('car_owner')
@@ -47,7 +47,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName, role, phone: phone.trim() || undefined }),
+      body: JSON.stringify({ email, password, fullName, role }),
     })
     const json = await res.json()
 
@@ -133,15 +133,7 @@ export default function RegisterPage() {
                   required
                   autoComplete="email"
                 />
-                <Input
-                  label="Phone number (optional)"
-                  type="tel"
-                  placeholder="08012345678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  icon={<Phone size={16} />}
-                  autoComplete="tel"
-                />
+
                 <Input
                   label="Password"
                   type="password"

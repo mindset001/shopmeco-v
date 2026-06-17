@@ -5,12 +5,11 @@ import type { UserRole } from '@/types'
 const PUBLIC_ROLES = new Set<UserRole>(['car_owner', 'repairer', 'parts_seller'])
 
 export async function POST(request: NextRequest) {
-  const { email, password, fullName, role, phone } = await request.json() as {
+  const { email, password, fullName, role } = await request.json() as {
     email?: string
     password?: string
     fullName?: string
     role?: UserRole
-    phone?: string
   }
 
   if (!email || !password || !fullName || !role) {
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-  await adminSb.from('profiles').upsert({ id: user.id, full_name: fullName, role, ...(phone ? { phone } : {}) })
+  await adminSb.from('profiles').upsert({ id: user.id, full_name: fullName, role })
 
   return NextResponse.json({ success: true })
 }
