@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Car, Wrench, ShoppingBag, Mail, Lock, User, LogIn } from 'lucide-react'
+import { Car, Wrench, ShoppingBag, Mail, Lock, User, LogIn, Phone } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { UserRole } from '@/types'
 import Button from '@/components/ui/Button'
@@ -21,6 +21,7 @@ export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1)
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<UserRole>('car_owner')
@@ -46,7 +47,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName, role }),
+      body: JSON.stringify({ email, password, fullName, role, phone: phone.trim() || undefined }),
     })
     const json = await res.json()
 
@@ -67,7 +68,7 @@ export default function RegisterPage() {
     
     // For Google OAuth, we need to pass the role as a state or custom data
     // Using redirect URL with role parameter
-    const redirectUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/auth/callback?role=${role}`
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/api/auth/callback?role=${role}`
     
     const { data, error: googleError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -131,6 +132,15 @@ export default function RegisterPage() {
                   icon={<Mail size={16} />}
                   required
                   autoComplete="email"
+                />
+                <Input
+                  label="Phone number (optional)"
+                  type="tel"
+                  placeholder="08012345678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  icon={<Phone size={16} />}
+                  autoComplete="tel"
                 />
                 <Input
                   label="Password"

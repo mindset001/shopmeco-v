@@ -5,11 +5,12 @@ import type { UserRole } from '@/types'
 const PUBLIC_ROLES = new Set<UserRole>(['car_owner', 'repairer', 'parts_seller'])
 
 export async function POST(request: NextRequest) {
-  const { email, password, fullName, role } = await request.json() as {
+  const { email, password, fullName, role, phone } = await request.json() as {
     email?: string
     password?: string
     fullName?: string
     role?: UserRole
+    phone?: string
   }
 
   if (!email || !password || !fullName || !role) {
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid account role' }, { status: 400 })
   }
 
-  const origin = new URL(request.url).origin
+  const origin = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin
 
   // Use anon client so Supabase sends the confirmation email via SMTP
   const anonSb = createClient(
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-  await adminSb.from('profiles').upsert({ id: user.id, full_name: fullName, role })
+  await adminSb.from('profiles').upsert({ id: user.id, full_name: fullName, role, ...(phone ? { phone } : {}) })
 
   return NextResponse.json({ success: true })
 }
