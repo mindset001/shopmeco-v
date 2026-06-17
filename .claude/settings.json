@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"require\\('/Users/user/Desktop/demlinks/shopmeco/node_modules/@ducanh2912/next-pwa/package.json'\\)\")"
+    ]
+  }
+}
