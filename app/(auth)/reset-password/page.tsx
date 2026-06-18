@@ -16,34 +16,29 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [validToken, setValidToken] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [success, setSuccess] = useState(false)
 
+  // Token verification is deferred to form submission (handleSubmit) rather than
+  // run automatically here. Recovery tokens are single-use, and email security
+  // scanners (Outlook Safe Links, Gmail link-checking, etc.) auto-GET every link
+  // in an inbox to scan it — if we verified on mount, that prefetch would burn
+  // the token before the real user ever clicks, leaving them with "link expired".
   useEffect(() => {
-    const supabase = createClient()
-    const code = new URLSearchParams(window.location.search).get('code')
-
-    async function init() {
-      if (code) {
-        // PKCE flow: exchange the code from the email link for a session
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-          router.push('/forgot-password')
-          return
-        }
-        setValidToken(true)
-      } else {
-        // Already have a recovery session (e.g. user refreshed the page)
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          setValidToken(true)
-        } else {
-          router.push('/forgot-password')
-        }
-      }
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('token_hash') || params.get('code')) {
+      setValidToken(true)
+      setCheckingSession(false)
+      return
     }
 
-    init()
-  }, [router])
+    // No token in URL — only valid if a recovery session already exists (e.g. page refresh)
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setValidToken(!!session?.user)
+      setCheckingSession(false)
+    })
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -67,6 +62,28 @@ export default function ResetPasswordPage() {
     setLoading(true)
 
     const supabase = createClient()
+    const params = new URLSearchParams(window.location.search)
+    const tokenHash = params.get('token_hash')
+    const code = params.get('code')
+
+    if (tokenHash) {
+      const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+      if (verifyError) {
+        setError('This link has expired or already been used. Request a new one.')
+        setValidToken(false)
+        setLoading(false)
+        return
+      }
+    } else if (code) {
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+      if (exchangeError) {
+        setError('This link has expired or already been used. Request a new one.')
+        setValidToken(false)
+        setLoading(false)
+        return
+      }
+    }
+
     const { error: updateError } = await supabase.auth.updateUser({
       password,
     })
@@ -79,11 +96,15 @@ export default function ResetPasswordPage() {
 
     setSuccess(true)
     toast('Password reset successfully!', 'success')
-    
+
     setTimeout(() => {
       router.push('/dashboard')
       router.refresh()
     }, 2000)
+  }
+
+  if (checkingSession) {
+    return null
   }
 
   if (!validToken) {
