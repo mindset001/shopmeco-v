@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { sendPushToUser } from '@/lib/push'
 
 export type NotificationType = 
   | 'booking_request'
@@ -27,7 +28,12 @@ export async function createNotification(
   })
   if (error) {
     console.error('Failed to create notification:', error)
+    return
   }
+
+  sendPushToUser(userId, { title, body, url: data?.url }).catch((err) => {
+    console.error('Failed to send push notification:', err)
+  })
 }
 
 export async function getNotifications(userId: string, limit = 20) {

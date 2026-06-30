@@ -464,6 +464,23 @@ CREATE INDEX notifications_created_idx ON notifications(created_at DESC);
 -- Enable realtime for notifications
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 
+-- ── 19b. Push Subscriptions (Web Push) ───────────────────────
+CREATE TABLE push_subscriptions (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  endpoint    text NOT NULL UNIQUE,
+  p256dh      text NOT NULL,
+  auth        text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage their own push subscriptions"
+  ON push_subscriptions FOR ALL USING (auth.uid() = user_id);
+
+CREATE INDEX push_subscriptions_user_id_idx ON push_subscriptions(user_id);
+
 -- ── 20. Phone OTP Verification ──────────────────────────────
 CREATE TABLE phone_otp_verifications (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),

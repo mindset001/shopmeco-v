@@ -1,31 +1,10 @@
 import type { NextConfig } from 'next'
-import withPWAInit from '@ducanh2912/next-pwa'
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === 'development',
-  fallbacks: {
-    document: '/offline',
-  },
-  workboxOptions: {
-    disableDevLogs: true,
-    runtimeCaching: [
-      // Cache pages (network-first)
-      {
-        urlPattern: /^https?.*/,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'offlineCache',
-          expiration: { maxEntries: 200 },
-        },
-      },
-    ],
-  },
-})
-
+// Note: PWA support (offline fallback, push) is implemented by hand via
+// public/sw.js + components/ServiceWorkerRegister.tsx rather than a
+// next-pwa/Workbox plugin — Turbopack (the default bundler since Next.js 16)
+// does not support webpack plugins, so the generated-service-worker approach
+// silently does nothing under this project's build.
 const nextConfig: NextConfig = {
   turbopack: {},
   images: {
@@ -38,4 +17,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default withPWA(nextConfig)
+export default nextConfig

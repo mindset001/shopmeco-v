@@ -15,7 +15,7 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <NotificationPermissionRequest />
+      <NotificationPermissionRequest userId={profile.id} />
       <RealtimeNotifications userId={profile.id} />
       <Navbar profile={profile} />
       <div className="dashboard-layout">
