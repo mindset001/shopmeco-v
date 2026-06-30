@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Badge from '@/components/ui/Badge'
 import UserActions from '../UserActions'
-import RatingStars from '@/components/ui/RatingStars'
+import ReviewsList from '@/components/reviews/ReviewsList'
 import { formatDate } from '@/lib/utils/helpers'
 
 export default async function AdminUserDetailPage({
@@ -317,24 +317,11 @@ export default async function AdminUserDetailPage({
         </div>
       )}
 
-      {/* Reviews received (as repairer) */}
+      {/* Reviews received (as repairer/seller) */}
       {(reviews?.length ?? 0) > 0 && (
         <div className="card" style={{ marginTop: 20 }}>
           <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Reviews ({reviews!.length})</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {(reviews as any[]).map((rev) => (
-              <div key={rev.id} style={{ padding: 12, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{rev.reviewer?.full_name ?? 'Customer'}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <RatingStars rating={rev.rating} size={13} />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-400)' }}>{formatDate(rev.created_at)}</span>
-                  </div>
-                </div>
-                {rev.comment && <p style={{ color: 'var(--color-text-300)', fontSize: '0.875rem', lineHeight: 1.6, margin: 0 }}>{rev.comment}</p>}
-              </div>
-            ))}
-          </div>
+          <ReviewsList reviews={reviews as any[]} canModerate />
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@ interface Repairer {
   latitude: number | null
   longitude: number | null
   is_verified: boolean
+  matchScore: number
   repairer_details: {
     workshop_name?: string | null
     rating?: number | null
@@ -25,13 +26,12 @@ interface Repairer {
 
 interface Props {
   repairers: Repairer[]
-  matchScore: (r: Repairer) => number
   showScore: boolean
 }
 
 type ViewMode = 'list' | 'map'
 
-export default function RepairersList({ repairers, matchScore, showScore }: Props) {
+export default function RepairersList({ repairers, showScore }: Props) {
   const [view, setView] = useState<ViewMode>('list')
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, startLocating] = useTransition()
@@ -209,7 +209,7 @@ export default function RepairersList({ repairers, matchScore, showScore }: Prop
                       {showScore && (
                         <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '0.78rem', color: 'var(--color-text-300)' }}>Match confidence</span>
-                          <span style={{ fontWeight: 800, color: 'var(--color-accent)' }}>{matchScore(r)}%</span>
+                          <span style={{ fontWeight: 800, color: 'var(--color-accent)' }}>{r.matchScore}%</span>
                         </div>
                       )}
 

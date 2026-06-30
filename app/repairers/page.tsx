@@ -60,7 +60,9 @@ export default async function RepairersPage({ searchParams }: PageProps) {
     return Math.min(score, 100)
   }
 
-  filtered = filtered.sort((a: any, b: any) => matchScore(b) - matchScore(a))
+  const scored = filtered
+    .map((r: any) => ({ ...r, matchScore: matchScore(r) }))
+    .sort((a, b) => b.matchScore - a.matchScore)
 
   return (
     <>
@@ -87,8 +89,7 @@ export default async function RepairersPage({ searchParams }: PageProps) {
         )}
 
         <RepairersList
-          repairers={filtered as any[]}
-          matchScore={matchScore}
+          repairers={scored}
           showScore={requestedSpecs.length > 0 || sp.emergency === '1'}
         />
       </div>
