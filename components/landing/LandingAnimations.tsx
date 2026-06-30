@@ -56,7 +56,15 @@ function useCountUp(target: number, duration = 1800, start = false) {
   return value
 }
 
-export function ProofStats() {
+export function ProofStats({
+  repairerCount = 0,
+  listingCount = 0,
+  avgRating = 0,
+}: {
+  repairerCount?: number
+  listingCount?: number
+  avgRating?: number
+}) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
 
@@ -71,8 +79,8 @@ export function ProofStats() {
     return () => observer.disconnect()
   }, [])
 
-  const repairers = useCountUp(2400, 1600, visible)
-  const listings  = useCountUp(14000, 1800, visible)
+  const repairers = useCountUp(repairerCount, 1600, visible)
+  const listings  = useCountUp(listingCount, 1800, visible)
 
   return (
     <div className="proof-banner__stats" ref={ref}>
@@ -81,11 +89,11 @@ export function ProofStats() {
         <div className="proof-banner__stat-label">Repairers on ShopMecko</div>
       </div>
       <div>
-        <div className="proof-banner__stat-value">{(listings / 1000).toFixed(0)}k+</div>
+        <div className="proof-banner__stat-value">{listings.toLocaleString()}+</div>
         <div className="proof-banner__stat-label">Parts listings</div>
       </div>
       <div>
-        <div className="proof-banner__stat-value">4.8★</div>
+        <div className="proof-banner__stat-value">{avgRating > 0 ? avgRating.toFixed(1) : '—'}★</div>
         <div className="proof-banner__stat-label">Average repairer rating</div>
       </div>
     </div>

@@ -137,6 +137,9 @@ CREATE POLICY "Active products are viewable by everyone"
 CREATE POLICY "Sellers can manage own products"
   ON products FOR ALL USING (auth.uid() = seller_id);
 
+CREATE POLICY "Admins can manage all products"
+  ON products FOR ALL USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
 -- ── 6. Orders ────────────────────────────────────────────────
 CREATE TABLE orders (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -228,22 +231,39 @@ CREATE POLICY "Reviews are public"
 CREATE POLICY "Car owners can leave reviews"
   ON reviews FOR INSERT WITH CHECK (auth.uid() = reviewer_id);
 
--- ── 10. Auto-update repairer rating on review ────────────────
-CREATE OR REPLACE FUNCTION update_repairer_rating()
+CREATE POLICY "Admins can delete reviews"
+  ON reviews FOR DELETE USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- ── 10. Auto-update reviewee rating on review change ──────────
+-- `reviews.repairer_id` despite its name stores the id of whoever is being
+-- reviewed (repairer or parts seller) — there is no role CHECK on the column.
+-- profiles.rating/total_reviews is the generic aggregate used everywhere;
+-- repairer_details.rating/total_reviews is kept in sync too for backward
+-- compatibility with existing repairer-specific pages.
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS rating numeric DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS total_reviews int DEFAULT 0;
+
+CREATE OR REPLACE FUNCTION update_review_rating()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  target_id uuid := COALESCE(NEW.repairer_id, OLD.repairer_id);
+  avg_rating numeric;
+  review_count int;
 BEGIN
-  UPDATE repairer_details
-  SET
-    rating = (SELECT AVG(rating) FROM reviews WHERE repairer_id = NEW.repairer_id),
-    total_reviews = (SELECT COUNT(*) FROM reviews WHERE repairer_id = NEW.repairer_id)
-  WHERE id = NEW.repairer_id;
-  RETURN NEW;
+  SELECT COALESCE(AVG(rating), 0), COUNT(*) INTO avg_rating, review_count
+  FROM reviews WHERE repairer_id = target_id;
+
+  UPDATE profiles SET rating = avg_rating, total_reviews = review_count WHERE id = target_id;
+  UPDATE repairer_details SET rating = avg_rating, total_reviews = review_count WHERE id = target_id;
+
+  RETURN COALESCE(NEW, OLD);
 END;
 $$;
 
-CREATE TRIGGER on_review_insert
-  AFTER INSERT OR UPDATE ON reviews
-  FOR EACH ROW EXECUTE FUNCTION update_repairer_rating();
+DROP TRIGGER IF EXISTS on_review_insert ON reviews;
+CREATE TRIGGER on_review_change
+  AFTER INSERT OR UPDATE OR DELETE ON reviews
+  FOR EACH ROW EXECUTE FUNCTION update_review_rating();
 
 -- ── 11. Enable Realtime for messages ─────────────────────────
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;

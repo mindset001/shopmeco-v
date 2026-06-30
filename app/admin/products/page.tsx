@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDate } from '@/lib/utils/helpers'
 import ProductToggle from './ProductToggle'
+import DeleteProductButton from './DeleteProductButton'
 import AdminSearchInput from '@/components/admin/AdminSearchInput'
 import AdminPagination from '@/components/admin/AdminPagination'
 
@@ -84,7 +85,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
                   </td>
                   <td style={{ color: 'var(--color-text-300)' }}>{formatDate(p.created_at)}</td>
                   <td>
-                    <ProductToggle productId={p.id} isActive={p.is_active} />
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                      <ProductToggle productId={p.id} isActive={p.is_active} />
+                      <DeleteProductButton productId={p.id} />
+                    </div>
                   </td>
                 </tr>
               ))}

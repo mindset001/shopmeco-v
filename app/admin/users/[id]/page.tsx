@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Badge from '@/components/ui/Badge'
 import UserActions from '../UserActions'
+import RatingStars from '@/components/ui/RatingStars'
 import { formatDate } from '@/lib/utils/helpers'
 
 export default async function AdminUserDetailPage({
@@ -21,6 +22,7 @@ export default async function AdminUserDetailPage({
     { data: products },
     { data: orders },
     { count: createdAccountsCount },
+    { data: reviews },
   ] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', id).single(),
     supabase.from('repairer_details').select('*').eq('id', id).single(),
@@ -28,6 +30,7 @@ export default async function AdminUserDetailPage({
     supabase.from('products').select('id, name, price, category, is_active, created_at').eq('seller_id', id).order('created_at', { ascending: false }),
     supabase.from('orders').select('id, total_price, status, created_at').or(`buyer_id.eq.${id},seller_id.eq.${id}`).order('created_at', { ascending: false }).limit(10),
     supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('created_by', id),
+    supabase.from('reviews').select('*, reviewer:profiles!reviewer_id(full_name, avatar_url)').eq('repairer_id', id).order('created_at', { ascending: false }),
   ])
 
   if (!profile) notFound()
@@ -310,6 +313,27 @@ export default async function AdminUserDetailPage({
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews received (as repairer) */}
+      {(reviews?.length ?? 0) > 0 && (
+        <div className="card" style={{ marginTop: 20 }}>
+          <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Reviews ({reviews!.length})</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(reviews as any[]).map((rev) => (
+              <div key={rev.id} style={{ padding: 12, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>{rev.reviewer?.full_name ?? 'Customer'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <RatingStars rating={rev.rating} size={13} />
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-400)' }}>{formatDate(rev.created_at)}</span>
+                  </div>
+                </div>
+                {rev.comment && <p style={{ color: 'var(--color-text-300)', fontSize: '0.875rem', lineHeight: 1.6, margin: 0 }}>{rev.comment}</p>}
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -33,6 +33,16 @@ export default async function HomePage() {
     .eq('is_active', true)
     .limit(4)
 
+  const [{ count: repairerCount }, { count: listingCount }, { data: ratedRepairers }] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'repairer'),
+    supabase.from('products').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('repairer_details').select('rating').gt('total_reviews', 0),
+  ])
+
+  const avgRating = ratedRepairers && ratedRepairers.length > 0
+    ? ratedRepairers.reduce((sum, r) => sum + (r.rating ?? 0), 0) / ratedRepairers.length
+    : 0
+
   return (
     <>
       <Navbar profile={profile} />
@@ -112,7 +122,11 @@ export default async function HomePage() {
             className="proof-banner__img"
           />
           <div className="proof-banner__overlay">
-            <ProofStats />
+            <ProofStats
+              repairerCount={repairerCount ?? 0}
+              listingCount={listingCount ?? 0}
+              avgRating={avgRating}
+            />
           </div>
         </div>
 

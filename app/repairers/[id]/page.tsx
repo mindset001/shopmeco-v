@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
 import RatingStars from '@/components/ui/RatingStars'
-import { formatDate } from '@/lib/utils/helpers'
 import BookingForm from './BookingForm'
-import ReviewForm from './ReviewForm'
+import ReviewForm from '@/components/reviews/ReviewForm'
+import ReviewsList from '@/components/reviews/ReviewsList'
 import ReportButton from '@/components/ui/ReportButton'
 import type { Metadata } from 'next'
 import LocationMapClient from '@/components/ui/LocationMapClient'
@@ -178,27 +178,7 @@ export default async function RepairerDetailPage({ params }: PageProps) {
           <h2 style={{ fontWeight: 700, marginBottom: 'var(--space-6)' }}>
             Reviews ({details?.total_reviews ?? 0})
           </h2>
-          {reviews && reviews.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              {(reviews as any[]).map((rev) => (
-                <div key={rev.id} className="card" style={{ padding: 'var(--space-5)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
-                    <span style={{ fontWeight: 600 }}>{rev.reviewer?.full_name ?? 'Customer'}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <RatingStars rating={rev.rating} size={13} />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-400)' }}>{formatDate(rev.created_at)}</span>
-                    </div>
-                  </div>
-                  {rev.comment && <p style={{ color: 'var(--color-text-300)', fontSize: '0.9rem', lineHeight: 1.6 }}>{rev.comment}</p>}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state" style={{ padding: 'var(--space-8)' }}>
-              <div className="empty-state__title">No reviews yet</div>
-              <div className="empty-state__desc">Be the first to review this repairer.</div>
-            </div>
-          )}
+          <ReviewsList reviews={(reviews ?? []) as any[]} emptyDesc="Be the first to review this repairer." />
         </div>
 
         {/* Unverified warning */}
@@ -229,7 +209,7 @@ export default async function RepairerDetailPage({ params }: PageProps) {
           >
             <BookingForm repairerId={id} customerId={profile.id} isVerified={repairer.is_verified} />
             {!hasReviewed ? (
-              <ReviewForm repairerId={id} reviewerId={profile.id} />
+              <ReviewForm revieweeId={id} reviewerId={profile.id} />
             ) : (
               <div className="card" style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--color-text-300)' }}>
                 <div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div>
