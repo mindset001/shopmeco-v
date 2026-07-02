@@ -33,17 +33,31 @@ export default async function FieldAgentDashboardPage() {
     : ((profile.field_agent_allowed_roles ?? []) as string[])
       .filter((role): role is RegistrableRole => role === 'repairer' || role === 'parts_seller')
 
-  const { data: createdProfiles } = await supabase
-    .from('profiles')
-    .select('id, full_name, phone, role, created_at, is_verified')
-    .eq('created_by', profile.id)
-    .in('role', ['repairer', 'parts_seller'])
-    .order('created_at', { ascending: false })
-    .limit(20)
+  const [
+    { data: createdProfiles },
+    { count: repairerCount },
+    { count: sellerCount },
+  ] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, full_name, phone, role, created_at, is_verified')
+      .eq('created_by', profile.id)
+      .in('role', ['repairer', 'parts_seller'])
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by', profile.id)
+      .eq('role', 'repairer'),
+    supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by', profile.id)
+      .eq('role', 'parts_seller'),
+  ])
 
   const accounts = (createdProfiles ?? []) as CreatedProfile[]
-  const repairerCount = accounts.filter((account) => account.role === 'repairer').length
-  const sellerCount = accounts.filter((account) => account.role === 'parts_seller').length
+  const totalCount = (repairerCount ?? 0) + (sellerCount ?? 0)
 
   return (
     <div className="animate-fade-in">
@@ -55,15 +69,15 @@ export default async function FieldAgentDashboardPage() {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-card__label">Accounts Created</div>
-          <div className="stat-card__value">{accounts.length}</div>
+          <div className="stat-card__value">{totalCount}</div>
         </div>
         <div className="stat-card">
           <div className="stat-card__label">Repairers</div>
-          <div className="stat-card__value">{repairerCount}</div>
+          <div className="stat-card__value">{repairerCount ?? 0}</div>
         </div>
         <div className="stat-card">
           <div className="stat-card__label">Parts Sellers</div>
-          <div className="stat-card__value">{sellerCount}</div>
+          <div className="stat-card__value">{sellerCount ?? 0}</div>
         </div>
       </div>
 
@@ -73,9 +87,9 @@ export default async function FieldAgentDashboardPage() {
         <div className="card">
           <div className="section-header" style={{ marginBottom: 'var(--space-4)' }}>
             <div>
-              <h2 className="section-title">Recent Accounts</h2>
+              <h2 className="section-title">All Accounts</h2>
               <p style={{ color: 'var(--color-text-300)', fontSize: '0.875rem' }}>
-                The latest repairers and parts sellers you created.
+                All repairers and parts sellers you have registered.
               </p>
             </div>
           </div>
