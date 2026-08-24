@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { MapPin, List, Map, Navigation, Wrench, BadgeCheck, ShieldAlert, Loader } from 'lucide-react'
 import RatingStars from '@/components/ui/RatingStars'
+import Avatar from '@/components/ui/Avatar'
 import MultiMarkerMapClient, { type MapPin as Pin } from '@/components/ui/MultiMarkerMapClient'
 import { calculateDistance } from '@/lib/utils/helpers'
 
@@ -191,9 +192,7 @@ export default function RepairersList({ repairers, showScore }: Props) {
                       )}
 
                       <div className="repairer-card__header">
-                        <span className="avatar avatar--lg avatar--fallback" style={{ fontSize: 18 }}>
-                          {(r.full_name ?? '?')[0]}
-                        </span>
+                        <Avatar name={r.full_name} size="lg" />
                         <div className="repairer-card__info">
                           <div className="repairer-card__name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             {r.full_name}

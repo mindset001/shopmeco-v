@@ -104,8 +104,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             {(product.city || product.state || product.street) && (
               <div style={{ marginBottom: 'var(--space-6)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-text-300)', fontSize: '0.9rem' }}>
-                <MapPin size={16} />
-                <span>{[product.street, product.city, product.state].filter(Boolean).join(', ')}</span>
+                <MapPin size={16} style={{ flexShrink: 0 }} />
+                <span style={{ minWidth: 0 }}>{[product.street, product.city, product.state].filter(Boolean).join(', ')}</span>
               </div>
             )}
 
@@ -121,11 +121,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
             )}
 
             <div className="card" style={{ padding: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
                 <span className="avatar avatar--md avatar--fallback" style={{ fontSize: 14 }}>
                   {((product as any).profiles?.full_name ?? '?')[0]}
                 </span>
-                <div>
+                <div style={{ minWidth: 0, flex: '1 1 auto' }}>
                   <div style={{ fontWeight: 600 }}>{(product as any).profiles?.full_name ?? 'Seller'}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>
                     <MapPin size={11} style={{ display: 'inline', marginRight: 3 }} />

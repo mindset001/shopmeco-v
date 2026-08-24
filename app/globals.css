@@ -1391,22 +1391,33 @@ form > .btn {
   
   /* Product page improvements */
   [style*="grid-template-columns:1fr 420px"] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   /* Car detail page (main info + owner card) */
   [style*="grid-template-columns:1fr 300px"] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   /* Field agent layout (register form + table) */
   [style*="minmax(280px, 360px)"] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   /* Equal two-column grids (forms, detail panels) */
   [style*="grid-template-columns:1fr 1fr"] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Grid items have an implicit min-width:auto independent of the track's
+     own minimum, so a wide, non-wrapping descendant (e.g. an unwrapped
+     flex row) still forces these collapsed single-column grids wider than
+     the viewport unless the item itself is also allowed to shrink. */
+  [style*="grid-template-columns:1fr 420px"] > *,
+  [style*="grid-template-columns:1fr 300px"] > *,
+  [style*="minmax(280px, 360px)"] > *,
+  [style*="grid-template-columns:1fr 1fr"] > * {
+    min-width: 0 !important;
   }
 
   /* Admin message oversight (conversation list + thread) */

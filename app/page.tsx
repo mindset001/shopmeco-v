@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/nav/Navbar'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import RatingStars from '@/components/ui/RatingStars'
+import Avatar from '@/components/ui/Avatar'
 import { HeroTyping, ProofStats, RevealOnScroll } from '@/components/landing/LandingAnimations'
 
 const features = [
@@ -148,9 +149,7 @@ export default async function HomePage() {
                   <Link href={`/repairers/${r.id}`}>
                     <div className="card card--hover" style={{ padding: 'var(--space-5)' }}>
                       <div className="repairer-card__header">
-                        <span className="avatar avatar--lg avatar--fallback" style={{ fontSize: 18 }}>
-                          {(r.full_name ?? '?')[0]}
-                        </span>
+                        <Avatar name={r.full_name} size="lg" />
                         <div className="repairer-card__info">
                           <div className="repairer-card__name">{r.full_name ?? 'Repairer'}</div>
                           <div className="repairer-card__workshop">{r.repairer_details?.workshop_name ?? 'Workshop'}</div>

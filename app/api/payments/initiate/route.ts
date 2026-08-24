@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAppUrl, initializePaystackTransaction } from '@/lib/paystack'
+import { getAppUrl, initializePaystackTransaction, PaystackNotConfiguredError } from '@/lib/paystack'
 import { getCurrentProfile } from '@/lib/utils/profile'
 
 export async function POST(req: NextRequest) {
@@ -84,6 +84,13 @@ export async function POST(req: NextRequest) {
       reference: payment.reference,
     })
   } catch (error) {
+    if (error instanceof PaystackNotConfiguredError) {
+      console.error('Payment initiation failed:', error)
+      return NextResponse.json(
+        { error: 'Online payments are temporarily unavailable. Please try again later or contact support.' },
+        { status: 503 }
+      )
+    }
     const message = error instanceof Error ? error.message : 'Could not initiate payment'
     return NextResponse.json({ error: message }, { status: 500 })
   }

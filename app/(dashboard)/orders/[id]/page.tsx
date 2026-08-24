@@ -77,7 +77,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
 
         {/* Product */}
-        <div className="card">
+        <div className="card" style={{ padding: 'var(--space-6)' }}>
           <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Product</h2>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
             {order.products?.images?.[0] ? (
@@ -113,7 +113,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
 
         {/* Buyer */}
-        <div className="card">
+        <div className="card" style={{ padding: 'var(--space-6)' }}>
           <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Buyer</h2>
           <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px' }}>
             <dt style={{ color: 'var(--color-text-300)', fontSize: '0.8125rem' }}>Name</dt>
@@ -140,7 +140,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </div>
 
         {/* Seller */}
-        <div className="card">
+        <div className="card" style={{ padding: 'var(--space-6)' }}>
           <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Seller</h2>
           <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px' }}>
             <dt style={{ color: 'var(--color-text-300)', fontSize: '0.8125rem' }}>Name</dt>
@@ -163,7 +163,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       {/* Status timeline */}
       {order.status !== 'cancelled' && (
-        <div className="card" style={{ marginTop: 20 }}>
+        <div className="card" style={{ marginTop: 20, padding: 'var(--space-6)' }}>
           <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Status Timeline</h2>
           <div style={{ display: 'flex', gap: 0 }}>
             {timeline.map((step, i) => {
@@ -199,7 +199,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       {/* Actions */}
       {(isSeller && order.status !== 'delivered' && order.status !== 'cancelled') ||
        (!isSeller && order.status === 'pending') ? (
-        <div className="card" style={{ marginTop: 20 }}>
+        <div className="card" style={{ marginTop: 20, padding: 'var(--space-6)' }}>
           <h2 style={{ fontWeight: 700, marginBottom: 16, fontSize: '1rem' }}>Actions</h2>
           <OrderActions orderId={order.id} currentStatus={order.status} isSeller={isSeller} />
         </div>

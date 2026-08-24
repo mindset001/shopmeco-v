@@ -195,6 +195,13 @@ export default function Navbar({ profile }: NavbarProps) {
                 <LayoutDashboard size={16} /> Dashboard
               </Link>
               <Link
+                href="/chat"
+                className="navbar__mobile-link"
+                onClick={() => setMenuOpen(false)}
+              >
+                <MessageSquare size={16} /> Chats
+              </Link>
+              <Link
                 href="/profile"
                 className="navbar__mobile-link"
                 onClick={() => setMenuOpen(false)}

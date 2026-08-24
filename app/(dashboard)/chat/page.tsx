@@ -15,17 +15,19 @@ export default async function ChatPage({ searchParams }: PageProps) {
   const supabase = await createClient()
 
   // Load conversations
-  const { data: conversations } = await supabase
+  const { data: conversationsData } = await supabase
     .from('conversations')
     .select('*, participant_1_profile:profiles!conversations_participant_1_fkey(id,full_name,avatar_url,role), participant_2_profile:profiles!conversations_participant_2_fkey(id,full_name,avatar_url,role)')
     .or(`participant_1.eq.${profile.id},participant_2.eq.${profile.id}`)
     .order('created_at', { ascending: false })
 
+  let conversations = conversationsData ?? []
+
   // If ?with= param, find or create conversation
   let selectedConvId = sp.conv ?? null
   if (sp.with && !selectedConvId) {
     const otherId = sp.with
-    const existing = (conversations ?? []).find((c: any) =>
+    const existing = conversations.find((c: any) =>
       (c.participant_1 === profile.id && c.participant_2 === otherId) ||
       (c.participant_2 === profile.id && c.participant_1 === otherId)
     )
@@ -35,13 +37,16 @@ export default async function ChatPage({ searchParams }: PageProps) {
       const { data: newConv } = await supabase
         .from('conversations')
         .insert({ participant_1: profile.id, participant_2: otherId })
-        .select()
+        .select('*, participant_1_profile:profiles!conversations_participant_1_fkey(id,full_name,avatar_url,role), participant_2_profile:profiles!conversations_participant_2_fkey(id,full_name,avatar_url,role)')
         .single()
-      if (newConv) selectedConvId = newConv.id
+      if (newConv) {
+        selectedConvId = newConv.id
+        conversations = [newConv, ...conversations]
+      }
     }
   }
 
-  if (!selectedConvId && conversations?.length) {
+  if (!selectedConvId && conversations.length) {
     selectedConvId = conversations[0].id
   }
 

@@ -28,7 +28,6 @@ export default function MarketplaceFilters({ locations, current }: Props) {
       if (v) sp.set(k, v)
     }
     router.push(`${pathname}?${sp.toString()}`)
-    setIsOpen(false)
   }
 
   return (

@@ -94,7 +94,7 @@ export default function OrderButton({ product, buyerId }: Props) {
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Enter your full delivery address"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)' }}>
               <div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>Total</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-accent)' }}>

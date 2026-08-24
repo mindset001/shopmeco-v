@@ -39,11 +39,18 @@ interface PaystackVerifyResponse {
   data?: PaystackTransaction
 }
 
+export class PaystackNotConfiguredError extends Error {
+  constructor() {
+    super('PAYSTACK_SECRET_KEY is not configured')
+    this.name = 'PaystackNotConfiguredError'
+  }
+}
+
 function getPaystackSecretKey() {
   const key = process.env.PAYSTACK_SECRET_KEY
 
   if (!key || key.includes(PLACEHOLDER_SECRET)) {
-    throw new Error('PAYSTACK_SECRET_KEY is not configured')
+    throw new PaystackNotConfiguredError()
   }
 
   return key

@@ -285,6 +285,34 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('verifications', 'verifications', true)
 ON CONFLICT DO NOTHING;
 
+-- Storage object policies — uploads write to `${auth.uid()}/...`, enforced via
+-- the first path segment. Buckets are public for read (getPublicUrl), but
+-- writes are restricted to the owning user.
+CREATE POLICY "Public read access for app buckets"
+  ON storage.objects FOR SELECT
+  USING (bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars'));
+
+CREATE POLICY "Users can upload to their own folder"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars')
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "Users can update their own files"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars')
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+CREATE POLICY "Users can delete their own files"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars')
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
 -- ── 13. Cars ─────────────────────────────────────────────────
 CREATE TABLE cars (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
