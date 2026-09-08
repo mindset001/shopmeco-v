@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
@@ -58,8 +59,7 @@ export default function Navbar({ profile, hideMobileMenu = false }: NavbarProps)
     <nav className="navbar">
       <div className="navbar__inner">
         <Link href="/" className="navbar__brand">
-          <Wrench size={22} className="navbar__logo-icon" />
-          <span>ShopMecko</span>
+          <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} priority style={{ height: 28, width: 'auto' }} />
         </Link>
 
         <div className="navbar__links">

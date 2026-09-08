@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Wrench, Mail, ArrowLeft } from 'lucide-react'
+import { Mail, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -44,8 +45,7 @@ export default function ForgotPasswordPage() {
         <div className="auth-layout">
           <div className="auth-card">
             <div className="auth-logo">
-              <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-              ShopMecko
+              <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} style={{ height: 28, width: 'auto' }} />
             </div>
 
             <h1 className="auth-title">Check your email</h1>
@@ -99,8 +99,7 @@ export default function ForgotPasswordPage() {
       <div className="auth-layout">
         <div className="auth-card">
           <div className="auth-logo">
-            <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-            ShopMecko
+            <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} style={{ height: 28, width: 'auto' }} />
           </div>
 
           <h1 className="auth-title">Forgot password?</h1>

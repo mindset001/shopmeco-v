@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Wrench, Mail, Phone } from 'lucide-react'
+import Image from 'next/image'
+import { Mail, Phone } from 'lucide-react'
 
 const CONTACT_EMAIL = 'shopmecko01@gmail.com'
 const CONTACT_PHONE = '+2348160071243'
@@ -12,9 +13,8 @@ export default function Footer() {
     <footer style={{ borderTop: '1px solid var(--color-border)', marginTop: 'var(--space-12)' }}>
       <div className="container" style={{ padding: 'var(--space-8) var(--space-4)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 'var(--space-6)' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 800, marginBottom: 'var(--space-2)' }}>
-            <Wrench size={18} />
-            <span>ShopMecko</span>
+          <div style={{ marginBottom: 'var(--space-3)' }}>
+            <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} style={{ height: 26, width: 'auto' }} />
           </div>
           <p style={{ color: 'var(--color-text-300)', fontSize: '0.85rem', maxWidth: 320 }}>
             Connecting car owners with verified mechanics and spare parts sellers across Nigeria.

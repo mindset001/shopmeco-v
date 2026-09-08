@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Wrench, Lock, CheckCircle } from 'lucide-react'
+import { Lock, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
@@ -114,8 +115,7 @@ export default function ResetPasswordPage() {
         <div className="auth-layout">
           <div className="auth-card">
             <div className="auth-logo">
-              <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-              ShopMecko
+              <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} style={{ height: 28, width: 'auto' }} />
             </div>
             <h1 className="auth-title">Invalid link</h1>
             <p className="auth-subtitle">This password reset link has expired or is invalid.</p>
@@ -158,8 +158,7 @@ export default function ResetPasswordPage() {
       <div className="auth-layout">
         <div className="auth-card">
           <div className="auth-logo">
-            <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-            ShopMecko
+            <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} style={{ height: 28, width: 'auto' }} />
           </div>
 
           <h1 className="auth-title">Set new password</h1>

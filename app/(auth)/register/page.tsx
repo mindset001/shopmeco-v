@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Car, Wrench, ShoppingBag, Mail, Lock, User, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -98,8 +99,7 @@ export default function RegisterPage() {
       <div className="auth-layout">
         <div className="auth-card">
           <div className="auth-logo">
-            <Wrench size={26} style={{ color: 'var(--color-accent)' }} />
-            ShopMecko
+            <Image src="/images/logo-wordmark.png" alt="ShopMecko" width={143} height={28} style={{ height: 28, width: 'auto' }} />
           </div>
 
           <h1 className="auth-title">
