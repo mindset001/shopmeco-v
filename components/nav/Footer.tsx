@@ -36,6 +36,18 @@ export default function Footer() {
           </div>
         </div>
 
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>Legal</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <Link href="/terms" style={{ color: 'var(--color-text-300)', fontSize: '0.85rem', textDecoration: 'none' }}>
+              Terms of Service
+            </Link>
+            <Link href="/privacy" style={{ color: 'var(--color-text-300)', fontSize: '0.85rem', textDecoration: 'none' }}>
+              Privacy Policy
+            </Link>
+          </div>
+        </div>
+
         {socialLinks.length > 0 && (
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: 'var(--space-3)' }}>Follow us</div>

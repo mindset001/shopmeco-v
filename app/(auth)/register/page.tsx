@@ -205,6 +205,14 @@ export default function RegisterPage() {
               </Button>
             </div>
 
+            {step === 2 && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-400)', textAlign: 'center' }}>
+                By creating an account, you agree to ShopMecko&apos;s{' '}
+                <Link href="/terms">Terms of Service</Link> and{' '}
+                <Link href="/privacy">Privacy Policy</Link>.
+              </p>
+            )}
+
             {step === 1 && (
               <>
                 <div style={{ 
