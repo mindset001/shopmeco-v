@@ -16,13 +16,18 @@ interface Props {
     stock_quantity: number
   }
   buyerId: string
+  isSellerSubscribed?: boolean
+  deliveryFee?: number
 }
 
-export default function OrderButton({ product, buyerId }: Props) {
+export default function OrderButton({ product, buyerId, isSellerSubscribed = true, deliveryFee = 0 }: Props) {
   const [open, setOpen] = useState(false)
   const [qty, setQty] = useState(1)
   const [address, setAddress] = useState('')
   const [loading, setLoading] = useState(false)
+
+  const subtotal = product.price * qty
+  const total = subtotal + deliveryFee
 
   async function handlePayNow() {
     if (!address.trim()) { toast('Please enter a delivery address.', 'warning'); return }
@@ -35,7 +40,8 @@ export default function OrderButton({ product, buyerId }: Props) {
       seller_id: product.seller_id,
       product_id: product.id,
       quantity: qty,
-      total_price: product.price * qty,
+      total_price: total,
+      delivery_fee: deliveryFee,
       status: 'pending',
       payment_status: 'unpaid',
       delivery_address: address,
@@ -62,6 +68,14 @@ export default function OrderButton({ product, buyerId }: Props) {
     }
 
     window.location.href = data.authorization_url
+  }
+
+  if (!isSellerSubscribed) {
+    return (
+      <div className="card" style={{ padding: 'var(--space-5)', textAlign: 'center', color: 'var(--color-text-300)', fontSize: '0.9rem' }}>
+        This seller isn&apos;t currently accepting orders.
+      </div>
+    )
   }
 
   return (
@@ -94,16 +108,28 @@ export default function OrderButton({ product, buyerId }: Props) {
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Enter your full delivery address"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)' }}>
-              <div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>Total</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-accent)' }}>
-                  ₦{(product.price * qty).toLocaleString()}
-                </div>
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--color-text-300)' }}>
+                <span>Subtotal</span>
+                <span>₦{subtotal.toLocaleString()}</span>
               </div>
-              <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button loading={loading} onClick={handlePayNow}>Pay via Paystack</Button>
+              {deliveryFee > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--color-text-300)' }}>
+                  <span>Delivery fee</span>
+                  <span>₦{deliveryFee.toLocaleString()}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+                <div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)' }}>Total</div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-accent)' }}>
+                    ₦{total.toLocaleString()}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                  <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
+                  <Button loading={loading} onClick={handlePayNow}>Pay via Paystack</Button>
+                </div>
               </div>
             </div>
           </div>

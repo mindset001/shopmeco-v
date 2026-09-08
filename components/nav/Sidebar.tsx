@@ -25,6 +25,7 @@ import {
   UserPlus,
   Menu,
   X,
+  Percent,
 } from 'lucide-react'
 
 import type { UserRole } from '@/types'
@@ -50,6 +51,7 @@ const navByRole: Record<
     { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
     { href: '/dashboard/verification', label: 'Verification', icon: Star },
     { href: '/profile', label: 'Profile & Reviews', icon: Star },
   ],
@@ -59,6 +61,7 @@ const navByRole: Record<
     { href: '/orders', label: 'Orders', icon: Package },
     { href: '/chat', label: 'Messages', icon: MessageSquare },
     { href: '/wallet', label: 'Wallet', icon: Wallet },
+    { href: '/dashboard/subscription', label: 'Subscription', icon: CreditCard },
     { href: '/dashboard/verification', label: 'Verification', icon: Star },
     { href: '/profile', label: 'Profile', icon: User },
   ],
@@ -77,6 +80,7 @@ const navByRole: Record<
     { href: '/admin/bookings', label: 'Bookings', icon: CalendarCheck },
     { href: '/admin/payments', label: 'Escrow', icon: CreditCard },
     { href: '/admin/payments/withdrawals', label: 'Withdrawals', icon: Wallet },
+    { href: '/admin/settings/platform', label: 'Platform Settings', icon: Percent },
     { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
     { href: '/admin/reports', label: 'Reports', icon: ShieldCheck },
     { href: '/admin/disputes', label: 'Disputes', icon: ShieldAlert },

@@ -2,9 +2,12 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
+import { getPlatformSettings } from '@/lib/settings/platform-settings'
 import Badge from '@/components/ui/Badge'
 import DeleteListingButton from './DeleteListingButton'
+import FeatureListingButton from './FeatureListingButton'
 import { ShoppingBag, Edit, Eye } from 'lucide-react'
+import { formatDate } from '@/lib/utils/helpers'
 
 export default async function MyListingsPage() {
   const profile = await getCurrentProfile()
@@ -16,6 +19,9 @@ export default async function MyListingsPage() {
     .select('*')
     .eq('seller_id', profile.id)
     .order('created_at', { ascending: false })
+
+  const settings = await getPlatformSettings()
+  const now = Date.now()
 
   return (
     <div className="animate-fade-in">
@@ -39,6 +45,7 @@ export default async function MyListingsPage() {
                   <th>Price</th>
                   <th>Stock</th>
                   <th>Status</th>
+                  <th>Featured</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -72,6 +79,19 @@ export default async function MyListingsPage() {
                       <Badge variant={p.is_active ? 'success' : 'warning'}>
                         {p.is_active ? 'Active' : 'Draft/Hidden'}
                       </Badge>
+                    </td>
+                    <td>
+                      {p.featured_until && new Date(p.featured_until).getTime() > now ? (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--color-accent)', fontWeight: 600 }}>
+                          Until {formatDate(p.featured_until)}
+                        </span>
+                      ) : (
+                        <FeatureListingButton
+                          productId={p.id}
+                          price={settings.featured_listing_price}
+                          durationDays={settings.featured_listing_duration_days}
+                        />
+                      )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>

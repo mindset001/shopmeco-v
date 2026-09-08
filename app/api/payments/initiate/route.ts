@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getAppUrl, initializePaystackTransaction, PaystackNotConfiguredError } from '@/lib/paystack'
+import { getAppUrl, initializePaystackTransaction, PaystackNotConfiguredError, type PaystackMetadata } from '@/lib/paystack'
 import { getCurrentProfile } from '@/lib/utils/profile'
+import { getPlatformSettings } from '@/lib/settings/platform-settings'
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,9 +10,9 @@ export async function POST(req: NextRequest) {
     if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
-    const { type, id } = body as { type: 'booking' | 'order'; id: string }
+    const { type, id } = body as { type: 'booking' | 'order' | 'featured_listing' | 'subscription'; id?: string }
 
-    if (!type || !id) {
+    if (!type || (type !== 'subscription' && !id)) {
       return NextResponse.json({ error: 'Missing type or id' }, { status: 400 })
     }
 
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
 
       amount = Number(booking.agreed_price)
       payeeId = booking.repairer_id
-      description = `Booking #${id.slice(0, 8)}`
+      description = `Booking #${id!.slice(0, 8)}`
     } else if (type === 'order') {
       const { data: order } = await supabase
         .from('orders')
@@ -56,7 +57,31 @@ export async function POST(req: NextRequest) {
 
       amount = Number(order.total_price)
       payeeId = order.seller_id
-      description = `Order #${id.slice(0, 8)}`
+      description = `Order #${id!.slice(0, 8)}`
+    } else if (type === 'featured_listing') {
+      if (profile.role !== 'parts_seller')
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+      const { data: product } = await supabase
+        .from('products')
+        .select('id, name, seller_id')
+        .eq('id', id)
+        .single()
+
+      if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
+      if (product.seller_id !== profile.id)
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+      const settings = await getPlatformSettings()
+      amount = Number(settings.featured_listing_price)
+      description = `Featured listing: ${product.name}`
+    } else if (type === 'subscription') {
+      if (profile.role !== 'repairer' && profile.role !== 'parts_seller')
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+      const settings = await getPlatformSettings()
+      amount = Number(settings.subscription_price)
+      description = 'ShopMecko provider subscription'
     } else {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
     }
@@ -65,18 +90,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 })
     }
 
+    const relatedId = type === 'subscription' ? profile.id : (id as string)
+
+    const metadata: PaystackMetadata = {
+      type,
+      related_id: relatedId,
+      payer_id: profile.id,
+      amount,
+      description,
+      ...(type === 'booking' || type === 'order' ? { payee_id: payeeId } : {}),
+    }
+
     const payment = await initializePaystackTransaction({
       email: user?.email ?? `payments+${profile.id}@shopmecko.com`,
       amount,
       callbackUrl: `${getAppUrl(req.url)}/api/payments/callback`,
-      metadata: {
-        type,
-        related_id: id,
-        payer_id: profile.id,
-        payee_id: payeeId,
-        amount,
-        description,
-      },
+      metadata,
     })
 
     return NextResponse.json({

@@ -25,6 +25,7 @@ export interface Profile {
   created_by: string | null
   field_agent_allowed_roles: UserRole[]
   shop_images: string[]
+  subscription_expires_at: string | null
   created_at: string
 }
 
@@ -66,6 +67,7 @@ export interface Product {
   compatible_cars: string[]
   images: string[]
   is_active: boolean
+  featured_until: string | null
   created_at: string
   profiles?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'city'>
 }
@@ -79,6 +81,7 @@ export interface Order {
   total_price: number
   status: OrderStatus
   delivery_address: string | null
+  delivery_fee: number
   created_at: string
   products?: Pick<Product, 'id' | 'name' | 'images' | 'price'>
   buyer?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
@@ -158,6 +161,7 @@ export interface EscrowPayment {
   payer_id: string
   payee_id: string
   amount: number
+  commission_amount: number
   paystack_ref: string | null
   status: EscrowStatus
   related_type: 'booking' | 'order'
@@ -166,6 +170,29 @@ export interface EscrowPayment {
   released_at: string | null
   payer?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
   payee?: Pick<Profile, 'id' | 'full_name' | 'avatar_url'>
+}
+
+export interface PlatformSettings {
+  id: true
+  commission_rate: number
+  featured_listing_price: number
+  featured_listing_duration_days: number
+  subscription_price: number
+  subscription_duration_days: number
+  trial_period_days: number
+  delivery_fee: number
+  updated_at: string
+  updated_by: string | null
+}
+
+export interface PlatformPurchase {
+  id: string
+  profile_id: string
+  type: 'featured_listing' | 'subscription'
+  related_id: string | null
+  amount: number
+  paystack_ref: string
+  created_at: string
 }
 
 export interface WalletTransaction {

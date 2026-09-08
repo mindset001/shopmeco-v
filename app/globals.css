@@ -894,6 +894,7 @@ form > .btn {
   overflow-y: auto;
 }
 .chat-main { flex: 1; display: flex; flex-direction: column; }
+.chat-back-btn { display: none; }
 .chat-messages {
   flex: 1; overflow-y: auto; padding: var(--space-6);
   display: flex; flex-direction: column; gap: var(--space-4);
@@ -1181,8 +1182,8 @@ form > .btn {
   .dashboard-main { max-width: 100%; }
   .mobile-sidebar-toggle {
     position: fixed;
-    left: var(--space-4);
-    bottom: var(--space-4);
+    right: var(--space-4);
+    top: calc(64px + var(--space-4));
     z-index: 230;
     display: inline-flex;
     align-items: center;
@@ -1381,10 +1382,19 @@ form > .btn {
   .hero__ctas .btn { width: 100%; justify-content: center; }
   .profile-hero { flex-direction: column; }
   .profile-hero__avatar { width: 100%; }
-  .chat-sidebar { display: none; }
+  .chat-sidebar { width: 100%; }
   .chat-layout { flex-direction: column; }
+  .chat-layout--mobile-chat .chat-sidebar { display: none; }
+  .chat-layout--mobile-list .chat-main { display: none; }
+  .chat-back-btn { display: inline-flex !important; }
   .dashboard-main { padding: var(--space-4); }
-  
+
+  /* Car detail image gallery: don't clip stacked images once the grid collapses to one column */
+  [style*="max-height:420px"] { max-height: none !important; overflow: visible !important; }
+
+  /* Marketplace product modal info column: no independent scroll box once stacked under the images */
+  [style*="max-height:70vh"] { max-height: none !important; overflow-y: visible !important; }
+
   /* Form improvements */
   .input-group { width: 100%; }
   .form-label { font-size: 0.9rem; }

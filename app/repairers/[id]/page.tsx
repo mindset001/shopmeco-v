@@ -207,7 +207,14 @@ export default async function RepairerDetailPage({ params }: PageProps) {
             id="book"
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-6)', marginTop: 'var(--space-8)' }}
           >
-            <BookingForm repairerId={id} customerId={profile.id} isVerified={repairer.is_verified} />
+            <BookingForm
+              repairerId={id}
+              customerId={profile.id}
+              isVerified={repairer.is_verified}
+              isSubscribed={Boolean(
+                repairer.subscription_expires_at && new Date(repairer.subscription_expires_at).getTime() > Date.now()
+              )}
+            />
             {!hasReviewed ? (
               <ReviewForm revieweeId={id} reviewerId={profile.id} />
             ) : (

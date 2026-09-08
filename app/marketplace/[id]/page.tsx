@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { MapPin, ShoppingBag, MessageSquare } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
+import { getPlatformSettings } from '@/lib/settings/platform-settings'
 import Navbar from '@/components/nav/Navbar'
 import { formatDate } from '@/lib/utils/helpers'
 import OrderButton from './OrderButton'
@@ -42,11 +43,13 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const { data: product } = await supabase
     .from('products')
-    .select('id, name, description, images, category, brand, condition, stock_quantity, price, seller_id, compatible_cars, created_at, street, city, state, profiles(id, full_name, avatar_url, city, state, latitude, longitude)')
+    .select('id, name, description, images, category, brand, condition, stock_quantity, price, seller_id, compatible_cars, created_at, street, city, state, profiles(id, full_name, avatar_url, city, state, latitude, longitude, subscription_expires_at)')
     .eq('id', id)
     .single()
 
   if (!product) notFound()
+
+  const settings = await getPlatformSettings()
 
   return (
     <>
@@ -140,7 +143,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             {profile && profile.id !== product.seller_id && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                <OrderButton product={product} buyerId={profile.id} />
+                <OrderButton
+                  product={product}
+                  buyerId={profile.id}
+                  isSellerSubscribed={Boolean(
+                    (product as any).profiles?.subscription_expires_at &&
+                      new Date((product as any).profiles.subscription_expires_at).getTime() > Date.now()
+                  )}
+                  deliveryFee={settings.delivery_fee}
+                />
                 <ChatButton
                   sellerId={product.seller_id}
                   sellerName={(product as any).profiles?.full_name}

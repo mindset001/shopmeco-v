@@ -3,13 +3,13 @@ import { createHmac, timingSafeEqual } from 'crypto'
 const PAYSTACK_BASE_URL = 'https://api.paystack.co'
 const PLACEHOLDER_SECRET = 'sk_test_8fadad00702e3ecd8bc6318e5e2a34dea5bf40c6'
 
-export type PaystackPaymentType = 'booking' | 'order'
+export type PaystackPaymentType = 'booking' | 'order' | 'featured_listing' | 'subscription'
 
 export interface PaystackMetadata {
   type: PaystackPaymentType
   related_id: string
   payer_id: string
-  payee_id: string
+  payee_id?: string
   amount: number
   description?: string
 }
@@ -148,13 +148,19 @@ export function parsePaystackMetadata(metadata: PaystackTransaction['metadata'] 
 }
 
 export function isValidPaystackMetadata(metadata: PaystackMetadata | null): metadata is PaystackMetadata {
-  return Boolean(
-    metadata &&
-      (metadata.type === 'booking' || metadata.type === 'order') &&
-      metadata.related_id &&
-      metadata.payer_id &&
-      metadata.payee_id &&
-      Number.isFinite(Number(metadata.amount)) &&
-      Number(metadata.amount) > 0
-  )
+  if (
+    !metadata ||
+    !metadata.related_id ||
+    !metadata.payer_id ||
+    !Number.isFinite(Number(metadata.amount)) ||
+    Number(metadata.amount) <= 0
+  ) {
+    return false
+  }
+
+  if (metadata.type === 'booking' || metadata.type === 'order') {
+    return Boolean(metadata.payee_id)
+  }
+
+  return metadata.type === 'featured_listing' || metadata.type === 'subscription'
 }

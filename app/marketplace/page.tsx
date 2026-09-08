@@ -1,7 +1,8 @@
 import Link from 'next/link'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/nav/Navbar'
+import Footer from '@/components/nav/Footer'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import type { Product } from '@/types'
 import MarketplaceFilters from './MarketplaceFilters'
@@ -19,6 +20,56 @@ type MarketplaceProduct = Product & {
 type ProductFilterRow = {
   city?: string | null
   profiles?: { city?: string | null } | null
+}
+
+function ProductCard({ p, featured = false }: { p: MarketplaceProduct; featured?: boolean }) {
+  return (
+    <Link href={`/marketplace/${p.id}`}>
+      <div className="card card--hover product-card" style={{ position: 'relative' }}>
+        {featured && (
+          <span
+            className="badge badge--warning"
+            style={{ position: 'absolute', top: 10, left: 10, zIndex: 1, display: 'flex', alignItems: 'center', gap: 4 }}
+          >
+            <Sparkles size={11} /> Featured
+          </span>
+        )}
+        <div className="product-card__image">
+          {p.images?.[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.images[0]} alt={p.name} />
+          ) : (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-surface-600)' }}>
+              <ShoppingBag size={44} />
+            </div>
+          )}
+        </div>
+        <div className="product-card__body">
+          <div className="product-card__name">{p.name}</div>
+          <div className="product-card__meta">
+            {[p.brand, p.category].filter(Boolean).join(' · ')}
+          </div>
+          <div className="product-card__price">
+            ₦{Number(p.price).toLocaleString()}
+          </div>
+        </div>
+        <div className="product-card__footer">
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-300)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>{p.city || p.profiles?.city || 'Local'}</span>
+            {p.condition && (
+              <>
+                <span>·</span>
+                <span style={{ color: p.condition.toLowerCase() === 'new' ? 'var(--color-success)' : 'var(--color-warning)' }}>{p.condition}</span>
+              </>
+            )}
+          </span>
+          <span className={`badge ${p.stock_quantity > 0 ? 'badge--success' : 'badge--danger'}`}>
+            {p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'Out of stock'}
+          </span>
+        </div>
+      </div>
+    </Link>
+  )
 }
 
 export default async function MarketplacePage({ searchParams }: PageProps) {
@@ -44,6 +95,15 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
   const { data: products } = await query.limit(48)
   const productList = (products ?? []) as MarketplaceProduct[]
 
+  const { data: featuredProducts } = await supabase
+    .from('products')
+    .select('*, profiles!inner(id, full_name, city)')
+    .eq('is_active', true)
+    .gt('featured_until', new Date().toISOString())
+    .order('featured_until', { ascending: false })
+    .limit(6)
+  const featuredList = (featuredProducts ?? []) as MarketplaceProduct[]
+
   const { data: allProducts } = await supabase
     .from('products')
     .select('category, brand, city, profiles(city)')
@@ -68,6 +128,19 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
           </p>
         </div>
 
+        {featuredList.length > 0 && (
+          <div style={{ marginBottom: 'var(--space-8)' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={18} style={{ color: 'var(--color-accent)' }} /> Featured Listings
+            </h2>
+            <div className="product-grid">
+              {featuredList.map((p) => (
+                <ProductCard key={p.id} p={p} featured />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="marketplace-layout">
           {/* Filters sidebar */}
           <aside className="marketplace-layout__filters" aria-label="Marketplace filters">
@@ -90,43 +163,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
             {productList.length > 0 ? (
               <div className="product-grid">
                 {productList.map((p) => (
-                  <Link key={p.id} href={`/marketplace/${p.id}`}>
-                    <div className="card card--hover product-card">
-                      <div className="product-card__image">
-                        {p.images?.[0] ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.images[0]} alt={p.name} />
-                        ) : (
-                          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-surface-600)' }}>
-                            <ShoppingBag size={44} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="product-card__body">
-                        <div className="product-card__name">{p.name}</div>
-                        <div className="product-card__meta">
-                          {[p.brand, p.category].filter(Boolean).join(' · ')}
-                        </div>
-                        <div className="product-card__price">
-                          ₦{Number(p.price).toLocaleString()}
-                        </div>
-                      </div>
-                      <div className="product-card__footer">
-                        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-300)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span>{p.city || p.profiles?.city || 'Local'}</span>
-                          {p.condition && (
-                            <>
-                              <span>·</span>
-                              <span style={{ color: p.condition.toLowerCase() === 'new' ? 'var(--color-success)' : 'var(--color-warning)' }}>{p.condition}</span>
-                            </>
-                          )}
-                        </span>
-                        <span className={`badge ${p.stock_quantity > 0 ? 'badge--success' : 'badge--danger'}`}>
-                          {p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'Out of stock'}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
+                  <ProductCard key={p.id} p={p} />
                 ))}
               </div>
             ) : (
@@ -140,6 +177,7 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   )
 }

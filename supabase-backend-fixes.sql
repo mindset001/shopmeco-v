@@ -729,3 +729,517 @@ CREATE POLICY "Users manage their own push subscriptions"
   ON push_subscriptions FOR ALL USING (auth.uid() = user_id);
 
 CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON push_subscriptions(user_id);
+
+-- ── Storage object policies (avatars/products/shops/verifications/cars) ──
+DROP POLICY IF EXISTS "Public read access for app buckets" ON storage.objects;
+CREATE POLICY "Public read access for app buckets"
+  ON storage.objects FOR SELECT
+  USING (bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars'));
+
+DROP POLICY IF EXISTS "Users can upload to their own folder" ON storage.objects;
+CREATE POLICY "Users can upload to their own folder"
+  ON storage.objects FOR INSERT
+  WITH CHECK (
+    bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars')
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "Users can update their own files" ON storage.objects;
+CREATE POLICY "Users can update their own files"
+  ON storage.objects FOR UPDATE
+  USING (
+    bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars')
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "Users can delete their own files" ON storage.objects;
+CREATE POLICY "Users can delete their own files"
+  ON storage.objects FOR DELETE
+  USING (
+    bucket_id IN ('avatars', 'products', 'shops', 'verifications', 'cars')
+    AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+-- ── Platform settings (commission + future monetization config) ────
+CREATE TABLE IF NOT EXISTS platform_settings (
+  id               boolean PRIMARY KEY DEFAULT true CHECK (id),
+  commission_rate  numeric NOT NULL DEFAULT 0.05 CHECK (commission_rate >= 0 AND commission_rate <= 1),
+  updated_at       timestamptz NOT NULL DEFAULT now(),
+  updated_by       uuid REFERENCES profiles(id)
+);
+
+INSERT INTO platform_settings (id, commission_rate)
+VALUES (true, 0.05)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Platform settings are viewable by everyone" ON platform_settings;
+CREATE POLICY "Platform settings are viewable by everyone"
+  ON platform_settings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admins can update platform settings" ON platform_settings;
+CREATE POLICY "Admins can update platform settings"
+  ON platform_settings FOR UPDATE USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+-- ── Escrow: commission on release ───────────────────────────────
+ALTER TABLE escrow_payments ADD COLUMN IF NOT EXISTS commission_amount numeric NOT NULL DEFAULT 0;
+
+CREATE OR REPLACE FUNCTION release_escrow_payment(
+  p_escrow_id uuid,
+  p_admin_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public AS $$
+DECLARE
+  v_escrow escrow_payments%ROWTYPE;
+  v_wallet_id uuid;
+  v_commission_rate numeric;
+  v_commission_amount numeric;
+  v_net_amount numeric;
+BEGIN
+  IF COALESCE(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'Service role required';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = p_admin_id AND role = 'admin') THEN
+    RAISE EXCEPTION 'Admin privileges required';
+  END IF;
+
+  SELECT * INTO v_escrow
+  FROM escrow_payments
+  WHERE id = p_escrow_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Escrow payment not found';
+  END IF;
+
+  IF v_escrow.status <> 'held' THEN
+    RAISE EXCEPTION 'Payment is not in held status';
+  END IF;
+
+  SELECT commission_rate INTO v_commission_rate FROM platform_settings LIMIT 1;
+  v_commission_rate := COALESCE(v_commission_rate, 0);
+  v_commission_amount := round(v_escrow.amount * v_commission_rate, 2);
+  v_net_amount := v_escrow.amount - v_commission_amount;
+
+  INSERT INTO wallets (user_id, balance)
+  VALUES (v_escrow.payee_id, 0)
+  ON CONFLICT (user_id) DO NOTHING;
+
+  UPDATE wallets
+  SET balance = balance + v_net_amount,
+      updated_at = now()
+  WHERE user_id = v_escrow.payee_id
+  RETURNING id INTO v_wallet_id;
+
+  INSERT INTO wallet_transactions (
+    user_id, wallet_id, type, amount, description, related_type, related_id
+  )
+  VALUES (
+    v_escrow.payee_id,
+    v_wallet_id,
+    'escrow_release',
+    v_net_amount,
+    'Released from escrow for ' || v_escrow.related_type || ' #' || left(v_escrow.related_id::text, 8)
+      || ' (₦' || v_commission_amount || ' platform fee deducted)',
+    v_escrow.related_type,
+    v_escrow.related_id
+  );
+
+  UPDATE escrow_payments
+  SET status = 'released',
+      released_at = now(),
+      commission_amount = v_commission_amount
+  WHERE id = v_escrow.id;
+
+  IF v_escrow.related_type = 'booking' THEN
+    UPDATE bookings SET payment_status = 'released' WHERE id = v_escrow.related_id;
+  ELSIF v_escrow.related_type = 'order' THEN
+    UPDATE orders SET payment_status = 'released' WHERE id = v_escrow.related_id;
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION release_escrow_payment(uuid, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION release_escrow_payment(uuid, uuid) TO service_role;
+
+-- ── Featured listings ────────────────────────────────────────────
+ALTER TABLE products ADD COLUMN IF NOT EXISTS featured_until timestamptz;
+
+ALTER TABLE platform_settings
+  ADD COLUMN IF NOT EXISTS featured_listing_price numeric NOT NULL DEFAULT 5000,
+  ADD COLUMN IF NOT EXISTS featured_listing_duration_days int NOT NULL DEFAULT 7;
+
+DO $$ BEGIN
+  ALTER TABLE platform_settings ADD CONSTRAINT featured_listing_price_check CHECK (featured_listing_price >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE platform_settings ADD CONSTRAINT featured_listing_duration_days_check CHECK (featured_listing_duration_days > 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE platform_purchase_type AS ENUM ('featured_listing');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS platform_purchases (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id   uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  type         platform_purchase_type NOT NULL,
+  related_id   uuid,
+  amount       numeric NOT NULL,
+  paystack_ref text UNIQUE NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE platform_purchases ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own platform purchases" ON platform_purchases;
+CREATE POLICY "Users can view their own platform purchases"
+  ON platform_purchases FOR SELECT USING (auth.uid() = profile_id);
+
+DROP POLICY IF EXISTS "Admins can view all platform purchases" ON platform_purchases;
+CREATE POLICY "Admins can view all platform purchases"
+  ON platform_purchases FOR SELECT USING (auth.uid() IN (SELECT id FROM profiles WHERE role = 'admin'));
+
+CREATE OR REPLACE FUNCTION activate_platform_purchase(
+  p_reference text,
+  p_type platform_purchase_type,
+  p_related_id uuid,
+  p_profile_id uuid,
+  p_amount numeric
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public AS $$
+DECLARE
+  v_existing_id uuid;
+  v_purchase_id uuid;
+  v_expected_amount numeric;
+  v_duration_days int;
+  v_product_seller uuid;
+BEGIN
+  IF COALESCE(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'Service role required';
+  END IF;
+
+  IF p_reference IS NULL OR length(trim(p_reference)) = 0 THEN
+    RAISE EXCEPTION 'Missing Paystack reference';
+  END IF;
+
+  SELECT id INTO v_existing_id FROM platform_purchases WHERE paystack_ref = p_reference;
+  IF v_existing_id IS NOT NULL THEN
+    RETURN jsonb_build_object('already_processed', true, 'purchase_id', v_existing_id);
+  END IF;
+
+  IF p_type = 'featured_listing' THEN
+    SELECT featured_listing_price, featured_listing_duration_days
+      INTO v_expected_amount, v_duration_days
+    FROM platform_settings;
+
+    SELECT seller_id INTO v_product_seller FROM products WHERE id = p_related_id FOR UPDATE;
+
+    IF v_product_seller IS NULL THEN
+      RAISE EXCEPTION 'Product not found';
+    END IF;
+    IF v_product_seller <> p_profile_id THEN
+      RAISE EXCEPTION 'Product does not belong to this seller';
+    END IF;
+    IF v_expected_amount <> p_amount THEN
+      RAISE EXCEPTION 'Payment amount does not match current featured listing price';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Invalid platform purchase type';
+  END IF;
+
+  INSERT INTO platform_purchases (profile_id, type, related_id, amount, paystack_ref)
+  VALUES (p_profile_id, p_type, p_related_id, p_amount, p_reference)
+  ON CONFLICT (paystack_ref) DO NOTHING
+  RETURNING id INTO v_purchase_id;
+
+  IF v_purchase_id IS NULL THEN
+    SELECT id INTO v_existing_id FROM platform_purchases WHERE paystack_ref = p_reference;
+    RETURN jsonb_build_object('already_processed', true, 'purchase_id', v_existing_id);
+  END IF;
+
+  IF p_type = 'featured_listing' THEN
+    UPDATE products
+    SET featured_until = GREATEST(COALESCE(featured_until, now()), now()) + make_interval(days => v_duration_days)
+    WHERE id = p_related_id;
+  END IF;
+
+  RETURN jsonb_build_object('already_processed', false, 'purchase_id', v_purchase_id);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION activate_platform_purchase(text, platform_purchase_type, uuid, uuid, numeric) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION activate_platform_purchase(text, platform_purchase_type, uuid, uuid, numeric) TO service_role;
+
+-- ── Provider subscriptions ───────────────────────────────────────
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_expires_at timestamptz;
+
+ALTER TABLE platform_settings
+  ADD COLUMN IF NOT EXISTS subscription_price numeric NOT NULL DEFAULT 3000,
+  ADD COLUMN IF NOT EXISTS subscription_duration_days int NOT NULL DEFAULT 30,
+  ADD COLUMN IF NOT EXISTS trial_period_days int NOT NULL DEFAULT 30;
+
+DO $$ BEGIN
+  ALTER TABLE platform_settings ADD CONSTRAINT subscription_price_check CHECK (subscription_price >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE platform_settings ADD CONSTRAINT subscription_duration_days_check CHECK (subscription_duration_days > 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE platform_settings ADD CONSTRAINT trial_period_days_check CHECK (trial_period_days >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TYPE platform_purchase_type ADD VALUE IF NOT EXISTS 'subscription';
+
+-- One-time grandfather trial for existing accounts (uses the trial length above)
+UPDATE profiles
+SET subscription_expires_at = now() + make_interval(days => (SELECT trial_period_days FROM platform_settings))
+WHERE role IN ('repairer', 'parts_seller') AND subscription_expires_at IS NULL;
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_role user_role;
+BEGIN
+  v_role := COALESCE((new.raw_user_meta_data->>'role')::user_role, 'car_owner');
+
+  INSERT INTO public.profiles (id, full_name, role, subscription_expires_at)
+  VALUES (
+    new.id,
+    new.raw_user_meta_data->>'full_name',
+    v_role,
+    CASE WHEN v_role IN ('repairer', 'parts_seller')
+      THEN now() + make_interval(days => COALESCE((SELECT trial_period_days FROM platform_settings), 30))
+      ELSE NULL
+    END
+  );
+  RETURN new;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION activate_platform_purchase(
+  p_reference text,
+  p_type platform_purchase_type,
+  p_related_id uuid,
+  p_profile_id uuid,
+  p_amount numeric
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public AS $$
+DECLARE
+  v_existing_id uuid;
+  v_purchase_id uuid;
+  v_expected_amount numeric;
+  v_duration_days int;
+  v_product_seller uuid;
+  v_profile_role user_role;
+BEGIN
+  IF COALESCE(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'Service role required';
+  END IF;
+
+  IF p_reference IS NULL OR length(trim(p_reference)) = 0 THEN
+    RAISE EXCEPTION 'Missing Paystack reference';
+  END IF;
+
+  SELECT id INTO v_existing_id FROM platform_purchases WHERE paystack_ref = p_reference;
+  IF v_existing_id IS NOT NULL THEN
+    RETURN jsonb_build_object('already_processed', true, 'purchase_id', v_existing_id);
+  END IF;
+
+  IF p_type = 'featured_listing' THEN
+    SELECT featured_listing_price, featured_listing_duration_days
+      INTO v_expected_amount, v_duration_days
+    FROM platform_settings;
+
+    SELECT seller_id INTO v_product_seller FROM products WHERE id = p_related_id FOR UPDATE;
+
+    IF v_product_seller IS NULL THEN
+      RAISE EXCEPTION 'Product not found';
+    END IF;
+    IF v_product_seller <> p_profile_id THEN
+      RAISE EXCEPTION 'Product does not belong to this seller';
+    END IF;
+    IF v_expected_amount <> p_amount THEN
+      RAISE EXCEPTION 'Payment amount does not match current featured listing price';
+    END IF;
+  ELSIF p_type = 'subscription' THEN
+    SELECT subscription_price, subscription_duration_days
+      INTO v_expected_amount, v_duration_days
+    FROM platform_settings;
+
+    SELECT role INTO v_profile_role FROM profiles WHERE id = p_profile_id FOR UPDATE;
+
+    IF v_profile_role IS NULL THEN
+      RAISE EXCEPTION 'Profile not found';
+    END IF;
+    IF v_profile_role NOT IN ('repairer', 'parts_seller') THEN
+      RAISE EXCEPTION 'Only repairers and parts sellers can subscribe';
+    END IF;
+    IF v_expected_amount <> p_amount THEN
+      RAISE EXCEPTION 'Payment amount does not match current subscription price';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Invalid platform purchase type';
+  END IF;
+
+  INSERT INTO platform_purchases (profile_id, type, related_id, amount, paystack_ref)
+  VALUES (p_profile_id, p_type, p_related_id, p_amount, p_reference)
+  ON CONFLICT (paystack_ref) DO NOTHING
+  RETURNING id INTO v_purchase_id;
+
+  IF v_purchase_id IS NULL THEN
+    SELECT id INTO v_existing_id FROM platform_purchases WHERE paystack_ref = p_reference;
+    RETURN jsonb_build_object('already_processed', true, 'purchase_id', v_existing_id);
+  END IF;
+
+  IF p_type = 'featured_listing' THEN
+    UPDATE products
+    SET featured_until = GREATEST(COALESCE(featured_until, now()), now()) + make_interval(days => v_duration_days)
+    WHERE id = p_related_id;
+  ELSIF p_type = 'subscription' THEN
+    UPDATE profiles
+    SET subscription_expires_at = GREATEST(COALESCE(subscription_expires_at, now()), now()) + make_interval(days => v_duration_days)
+    WHERE id = p_profile_id;
+  END IF;
+
+  RETURN jsonb_build_object('already_processed', false, 'purchase_id', v_purchase_id);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION activate_platform_purchase(text, platform_purchase_type, uuid, uuid, numeric) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION activate_platform_purchase(text, platform_purchase_type, uuid, uuid, numeric) TO service_role;
+
+DROP POLICY IF EXISTS "Customers can create bookings" ON bookings;
+CREATE POLICY "Customers can create bookings"
+  ON bookings FOR INSERT WITH CHECK (
+    auth.uid() = customer_id
+    AND EXISTS (SELECT 1 FROM profiles WHERE id = repairer_id AND subscription_expires_at > now())
+  );
+
+DROP POLICY IF EXISTS "Buyers can create orders" ON orders;
+CREATE POLICY "Buyers can create orders"
+  ON orders FOR INSERT WITH CHECK (
+    auth.uid() = buyer_id
+    AND EXISTS (SELECT 1 FROM profiles WHERE id = seller_id AND subscription_expires_at > now())
+  );
+
+-- ── Delivery fee ─────────────────────────────────────────────────
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee numeric NOT NULL DEFAULT 0;
+
+ALTER TABLE platform_settings
+  ADD COLUMN IF NOT EXISTS delivery_fee numeric NOT NULL DEFAULT 1500;
+
+DO $$ BEGIN
+  ALTER TABLE platform_settings ADD CONSTRAINT delivery_fee_check CHECK (delivery_fee >= 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE OR REPLACE FUNCTION release_escrow_payment(
+  p_escrow_id uuid,
+  p_admin_id uuid
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public AS $$
+DECLARE
+  v_escrow escrow_payments%ROWTYPE;
+  v_wallet_id uuid;
+  v_commission_rate numeric;
+  v_commission_amount numeric;
+  v_net_amount numeric;
+  v_delivery_fee numeric := 0;
+  v_product_amount numeric;
+BEGIN
+  IF COALESCE(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'Service role required';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = p_admin_id AND role = 'admin') THEN
+    RAISE EXCEPTION 'Admin privileges required';
+  END IF;
+
+  SELECT * INTO v_escrow
+  FROM escrow_payments
+  WHERE id = p_escrow_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Escrow payment not found';
+  END IF;
+
+  IF v_escrow.status <> 'held' THEN
+    RAISE EXCEPTION 'Payment is not in held status';
+  END IF;
+
+  IF v_escrow.related_type = 'order' THEN
+    SELECT delivery_fee INTO v_delivery_fee FROM orders WHERE id = v_escrow.related_id;
+    v_delivery_fee := COALESCE(v_delivery_fee, 0);
+  END IF;
+
+  SELECT commission_rate INTO v_commission_rate FROM platform_settings LIMIT 1;
+  v_commission_rate := COALESCE(v_commission_rate, 0);
+  v_product_amount := v_escrow.amount - v_delivery_fee;
+  v_commission_amount := round(v_product_amount * v_commission_rate, 2);
+  v_net_amount := v_product_amount - v_commission_amount;
+
+  INSERT INTO wallets (user_id, balance)
+  VALUES (v_escrow.payee_id, 0)
+  ON CONFLICT (user_id) DO NOTHING;
+
+  UPDATE wallets
+  SET balance = balance + v_net_amount,
+      updated_at = now()
+  WHERE user_id = v_escrow.payee_id
+  RETURNING id INTO v_wallet_id;
+
+  INSERT INTO wallet_transactions (
+    user_id, wallet_id, type, amount, description, related_type, related_id
+  )
+  VALUES (
+    v_escrow.payee_id,
+    v_wallet_id,
+    'escrow_release',
+    v_net_amount,
+    'Released from escrow for ' || v_escrow.related_type || ' #' || left(v_escrow.related_id::text, 8)
+      || ' (₦' || v_commission_amount || ' platform fee'
+      || CASE WHEN v_delivery_fee > 0 THEN ', ₦' || v_delivery_fee || ' delivery fee' ELSE '' END
+      || ' retained)',
+    v_escrow.related_type,
+    v_escrow.related_id
+  );
+
+  UPDATE escrow_payments
+  SET status = 'released',
+      released_at = now(),
+      commission_amount = v_commission_amount
+  WHERE id = v_escrow.id;
+
+  IF v_escrow.related_type = 'booking' THEN
+    UPDATE bookings SET payment_status = 'released' WHERE id = v_escrow.related_id;
+  ELSIF v_escrow.related_type = 'order' THEN
+    UPDATE orders SET payment_status = 'released' WHERE id = v_escrow.related_id;
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION release_escrow_payment(uuid, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION release_escrow_payment(uuid, uuid) TO service_role;

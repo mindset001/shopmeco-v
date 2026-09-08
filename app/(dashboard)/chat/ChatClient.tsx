@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Send } from 'lucide-react'
+import { Send, ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Conversation, Message, Profile } from '@/types'
 import Avatar from '@/components/ui/Avatar'
@@ -23,6 +23,7 @@ type ChatConversation = Conversation & {
 export default function ChatClient({ profile, conversations, selectedConvId: initConvId, initialMessages }: Props) {
   const router = useRouter()
   const [activeConvId, setActiveConvId] = useState<string | null>(initConvId)
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>(initConvId ? 'chat' : 'list')
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -67,6 +68,7 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
 
   async function switchConv(convId: string) {
     setActiveConvId(convId)
+    setMobileView('chat')
     const { data } = await supabase
       .from('messages')
       .select('*')
@@ -105,7 +107,7 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
   return (
     <>
       <Toaster />
-      <div className="chat-layout" style={{ height: 'calc(100vh - 64px)' }}>
+      <div className={`chat-layout chat-layout--mobile-${mobileView}`} style={{ height: 'calc(100vh - 64px)' }}>
         {/* Conversation list */}
         <div className="chat-sidebar">
           <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border)', fontWeight: 700 }}>
@@ -140,6 +142,14 @@ export default function ChatClient({ profile, conversations, selectedConvId: ini
             <>
               {/* Header */}
               <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <button
+                  className="chat-back-btn"
+                  onClick={() => setMobileView('list')}
+                  aria-label="Back to conversations"
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-200)', cursor: 'pointer', padding: 4, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
                 <Avatar src={activeConv.other_user?.avatar_url} name={activeConv.other_user?.full_name} size="md" />
                 <div>
                   <div style={{ fontWeight: 700 }}>{activeConv.other_user?.full_name}</div>

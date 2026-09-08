@@ -4,6 +4,9 @@ import Badge from '@/components/ui/Badge'
 import { Car as CarIcon, MapPin } from 'lucide-react'
 import type { Car } from '@/types'
 import CarsFilters from './CarsFilters'
+import Navbar from '@/components/nav/Navbar'
+import Footer from '@/components/nav/Footer'
+import { getCurrentProfile } from '@/lib/utils/profile'
 
 export default async function CarsPage({
   searchParams,
@@ -11,7 +14,7 @@ export default async function CarsPage({
   searchParams: Promise<{ make?: string; q?: string }>
 }) {
   const { make, q } = await searchParams
-  const supabase = await createClient()
+  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
 
   let query = supabase
     .from('cars')
@@ -29,6 +32,7 @@ export default async function CarsPage({
 
   return (
     <div className="cars-directory">
+      <Navbar profile={profile} />
       {/* Header */}
       <div className="directory-hero">
         <div className="directory-hero__inner">
@@ -89,6 +93,7 @@ export default async function CarsPage({
           )}
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

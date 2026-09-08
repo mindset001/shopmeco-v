@@ -23,6 +23,7 @@ import NotificationBell from './NotificationBell'
 
 interface NavbarProps {
   profile: Profile | null
+  hideMobileMenu?: boolean
 }
 
 const navLinks = [
@@ -41,7 +42,7 @@ const getRoleDisplay = (role: string) => {
   return roleMap[role] || { label: role, color: '#6b7280' }
 }
 
-export default function Navbar({ profile }: NavbarProps) {
+export default function Navbar({ profile, hideMobileMenu = false }: NavbarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -130,17 +131,19 @@ export default function Navbar({ profile }: NavbarProps) {
             </>
           )}
 
-          <button
-            className="navbar__hamburger"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Toggle menu"
-          >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          {!hideMobileMenu && (
+            <button
+              className="navbar__hamburger"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          )}
         </div>
       </div>
 
-      {menuOpen && (
+      {!hideMobileMenu && menuOpen && (
         <div className="navbar__mobile">
           {profile && (
             <div style={{

@@ -17,7 +17,7 @@ export default async function DashboardLayout({
     <>
       <NotificationPermissionRequest userId={profile.id} />
       <RealtimeNotifications userId={profile.id} />
-      <Navbar profile={profile} />
+      <Navbar profile={profile} hideMobileMenu />
       <div className="dashboard-layout">
         <Sidebar role={profile.role} />
         <main className="dashboard-main">{children}</main>

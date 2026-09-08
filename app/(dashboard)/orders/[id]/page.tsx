@@ -58,6 +58,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-accent)' }}>
             ₦{Number(order.total_price).toLocaleString()}
           </div>
+          {Number(order.delivery_fee) > 0 && (
+            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-400)' }}>
+              Includes ₦{Number(order.delivery_fee).toLocaleString()} delivery fee
+            </div>
+          )}
           <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-300)' }}>
             Placed {formatDate(order.created_at)}
           </div>

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Navbar from '@/components/nav/Navbar'
+import Footer from '@/components/nav/Footer'
 import RepairersSearchBar from './RepairersSearchBar'
 import RepairersList from './RepairersList'
 import { categoriesFromSymptoms } from '@/lib/car-owner/insights'
@@ -93,6 +94,7 @@ export default async function RepairersPage({ searchParams }: PageProps) {
           showScore={requestedSpecs.length > 0 || sp.emergency === '1'}
         />
       </div>
+      <Footer />
     </>
   )
 }

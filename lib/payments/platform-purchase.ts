@@ -1,0 +1,32 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { createAdminClient } from '@/lib/supabase/admin'
+import type { PaystackMetadata } from '@/lib/paystack'
+
+export async function activatePlatformPurchase(params: {
+  reference: string
+  metadata: PaystackMetadata
+  supabase?: SupabaseClient
+}) {
+  const { reference, metadata } = params
+  const supabase = params.supabase ?? createAdminClient()
+  const amount = Number(metadata.amount)
+
+  if (!reference) throw new Error('Missing Paystack reference')
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Invalid payment amount')
+
+  const { data, error } = await supabase.rpc('activate_platform_purchase', {
+    p_reference: reference,
+    p_type: metadata.type,
+    p_related_id: metadata.related_id,
+    p_profile_id: metadata.payer_id,
+    p_amount: amount,
+  })
+
+  if (error) throw error
+
+  const result = data as { already_processed?: boolean; purchase_id?: string | null } | null
+  return {
+    alreadyProcessed: Boolean(result?.already_processed),
+    purchaseId: result?.purchase_id ?? null,
+  }
+}

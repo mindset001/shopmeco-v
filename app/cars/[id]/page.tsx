@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/utils/profile'
 import Badge from '@/components/ui/Badge'
 import Avatar from '@/components/ui/Avatar'
+import Navbar from '@/components/nav/Navbar'
 import { Car as CarIcon, MapPin, Calendar, Gauge, MessageSquare, Wrench } from 'lucide-react'
 
 export default async function CarDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,6 +26,7 @@ export default async function CarDetailPage({ params }: { params: Promise<{ id: 
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-surface-900)' }}>
+      <Navbar profile={currentProfile} />
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px' }}>
         <Link href="/cars" style={{ color: 'var(--color-text-300)', fontSize: '0.9rem', textDecoration: 'none', marginBottom: 24, display: 'inline-block' }}>
           ← Back to Cars

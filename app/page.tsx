@@ -240,6 +240,7 @@ export default async function HomePage() {
             <Link href="/repairers" style={{ color: 'var(--color-text-400)' }}>Find a Repairer</Link>
             <Link href="/marketplace" style={{ color: 'var(--color-text-400)' }}>Marketplace</Link>
             <Link href="/careers" style={{ color: 'var(--color-text-400)' }}>Careers</Link>
+            <Link href="/contact" style={{ color: 'var(--color-text-400)' }}>Contact Us</Link>
           </div>
           <div>© {new Date().getFullYear()} ShopMecko. All rights reserved.</div>
         </div>

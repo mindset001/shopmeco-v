@@ -34,12 +34,13 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
   // Summary counts
   const { data: summary } = await supabase
     .from('escrow_payments')
-    .select('status, amount')
+    .select('status, amount, commission_amount')
 
   const held = summary?.filter((p) => p.status === 'held') ?? []
   const released = summary?.filter((p) => p.status === 'released') ?? []
   const heldTotal = held.reduce((s, p) => s + Number(p.amount), 0)
   const releasedTotal = released.reduce((s, p) => s + Number(p.amount), 0)
+  const commissionTotal = released.reduce((s, p) => s + Number(p.commission_amount), 0)
 
   return (
     <div className="animate-fade-in">
@@ -59,6 +60,11 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)', marginBottom: 4 }}>Total Released</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-success)' }}>₦{releasedTotal.toLocaleString()}</div>
           <div style={{ fontSize: '0.75rem', color: 'var(--color-text-400)', marginTop: 2 }}>{released.length} payment{released.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="card" style={{ padding: 'var(--space-5)' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-300)', marginBottom: 4 }}>Total Commission Earned</div>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-accent)' }}>₦{commissionTotal.toLocaleString()}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-400)', marginTop: 2 }}>from {released.length} released payment{released.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
 
@@ -104,7 +110,14 @@ export default async function AdminPaymentsPage({ searchParams }: PageProps) {
                     <td style={{ textTransform: 'capitalize', fontSize: '0.85rem', color: 'var(--color-text-300)' }}>
                       {p.related_type}
                     </td>
-                    <td style={{ fontWeight: 700 }}>₦{Number(p.amount).toLocaleString()}</td>
+                    <td style={{ fontWeight: 700 }}>
+                      ₦{Number(p.amount).toLocaleString()}
+                      {p.status === 'released' && (
+                        <div style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--color-text-400)' }}>
+                          -₦{Number(p.commission_amount).toLocaleString()} fee
+                        </div>
+                      )}
+                    </td>
                     <td>
                       <Badge variant={statusVariant[p.status as EscrowStatus]}>
                         {p.status}

@@ -49,10 +49,12 @@ export default function BookingForm({
   repairerId,
   customerId,
   isVerified = true,
+  isSubscribed = true,
 }: {
   repairerId: string
   customerId: string
   isVerified?: boolean
+  isSubscribed?: boolean
 }) {
   const searchParams = useSearchParams()
 
@@ -151,6 +153,18 @@ export default function BookingForm({
         <div style={{ fontWeight: 700, fontSize: '1rem' }}>Booking Unavailable</div>
         <div style={{ color: 'var(--color-text-300)', fontSize: '0.9rem', lineHeight: 1.6 }}>
           This mechanic hasn&apos;t been verified by ShopMecko admin yet. Once verified, you&apos;ll be able to book an appointment. You can still send them a message in the meantime.
+        </div>
+      </div>
+    )
+  }
+
+  if (!isSubscribed) {
+    return (
+      <div className="card" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)', textAlign: 'center' }}>
+        <ShieldAlert size={36} style={{ color: '#f59e0b' }} />
+        <div style={{ fontWeight: 700, fontSize: '1rem' }}>Booking Unavailable</div>
+        <div style={{ color: 'var(--color-text-300)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+          This provider isn&apos;t currently accepting new bookings. You can still send them a message in the meantime.
         </div>
       </div>
     )
