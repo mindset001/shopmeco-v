@@ -1,7 +1,6 @@
 import { createHmac, timingSafeEqual } from 'crypto'
 
 const PAYSTACK_BASE_URL = 'https://api.paystack.co'
-const PLACEHOLDER_SECRET = 'sk_test_8fadad00702e3ecd8bc6318e5e2a34dea5bf40c6'
 
 export type PaystackPaymentType = 'booking' | 'order' | 'featured_listing' | 'subscription'
 
@@ -49,7 +48,7 @@ export class PaystackNotConfiguredError extends Error {
 function getPaystackSecretKey() {
   const key = process.env.PAYSTACK_SECRET_KEY
 
-  if (!key || key.includes(PLACEHOLDER_SECRET)) {
+  if (!key) {
     throw new PaystackNotConfiguredError()
   }
 

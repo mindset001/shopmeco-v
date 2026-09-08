@@ -76,7 +76,7 @@ export default async function HomePage() {
           {/* Mechanic photo — right column */}
           <div className="hero__visual">
             <video
-              src="/videos/mech.mp4"
+              src="/videos/shopmecko2.mp4"
               autoPlay
               loop
               muted
